@@ -76,6 +76,14 @@ export default function TripDetail() {
     }
     lines.push('');
 
+    if (t.plan) {
+      lines.push('━'.repeat(20));
+      lines.push('📋 行程计划');
+      lines.push('━'.repeat(20));
+      lines.push(stripHtml(t.plan).trim());
+      lines.push('');
+    }
+
     if (t.gearList.length > 0) {
       lines.push('━'.repeat(20));
       lines.push('🎒 打包清单');
@@ -182,11 +190,9 @@ export default function TripDetail() {
               {showPlan ? '收起' : '展开'}
             </button>
           </div>
-          {showPlan && (
-            <div className="plan-iframe-wrap">
-              <iframe ref={iframeRef} className="plan-iframe" srcDoc={planDoc} title="行程计划" />
-            </div>
-          )}
+          <div className={`plan-iframe-wrap${showPlan ? '' : ' plan-hidden'}`}>
+            <iframe ref={iframeRef} className="plan-iframe" srcDoc={planDoc} title="行程计划" />
+          </div>
         </section>
       )}
 
@@ -322,6 +328,20 @@ export default function TripDetail() {
       )}
     </div>
   );
+}
+
+function stripHtml(html: string): string {
+  return html
+    .replace(/<style[^>]*>[\s\S]*?<\/style>/g, '')
+    .replace(/<br\s*\/?>/g, '\n')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&amp;/g, '&')
+    .replace(/\n{3,}/g, '\n\n')
+    .replace(/[ \t]+/g, ' ')
+    .trim();
 }
 
 function wrapPlanHtml(fragment: string): string {
