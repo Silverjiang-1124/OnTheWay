@@ -21,6 +21,8 @@ export default function TripDetail() {
   const [assigneeFilter, setAssigneeFilter] = useState<AssigneeFilter>('我');
   const [showAddGear, setShowAddGear] = useState(false);
   const [addFilter, setAddFilter] = useState<GearCategory | 'all'>('all');
+  const [showExportMenu, setShowExportMenu] = useState(false);
+  const [copied, setCopied] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
   const gearMap = new Map(gearItems.map(g => [g.id, g]));
@@ -55,6 +57,65 @@ export default function TripDetail() {
     setEditingJournal(false);
   };
 
+  const handleCopySummary = (t: typeof trip, gearMap: Map<string, { name: string; category: string; weight?: number }>, done: (v: boolean) => void) => {
+    const gearById = new Map(gearItems.map(g => [g.id, g]));
+    const lines: string[] = [];
+    lines.push(`🏔️ ${t.title}`);
+    lines.push(`📍 ${t.location}  |  📅 ${t.startDate} ~ ${t.endDate}`);
+    if (t.route) lines.push(`🗺️ ${t.route}`);
+    if (t.distance || t.elevation) {
+      const parts: string[] = [];
+      if (t.distance) parts.push(`📏 ${t.distance}km`);
+      if (t.elevation) parts.push(`🏔️ ${t.elevation}m`);
+      if (t.members.length) parts.push(`👥 ${t.members.join(', ')}`);
+      lines.push(parts.join('  |  '));
+    }
+    lines.push('');
+
+    if (t.gearList.length > 0) {
+      lines.push('━'.repeat(20));
+      lines.push('🎒 打包清单');
+      lines.push('━'.repeat(20));
+      const catGroups: Record<string, string[]> = {};
+      for (const tg of t.gearList) {
+        const g = gearById.get(tg.gearId);
+        if (!g) continue;
+        const cat = gearCategoryLabel(g.category);
+        if (!catGroups[cat]) catGroups[cat] = [];
+        const mark = tg.packed ? '✅' : '⬜';
+        const who = tg.assignee ? ` (${tg.assignee})` : '';
+        catGroups[cat].push(`  ${mark} ${g.name}${who}`);
+      }
+      for (const [cat, items] of Object.entries(catGroups)) {
+        lines.push(`\n${cat}`);
+        lines.push(...items);
+      }
+      lines.push('');
+    }
+
+    if (t.journal) {
+      lines.push('━'.repeat(20));
+      lines.push('📝 游记');
+      lines.push('━'.repeat(20));
+      lines.push(t.journal);
+    }
+
+    navigator.clipboard.writeText(lines.join('\n')).then(() => {
+      done(true);
+      setTimeout(() => done(false), 2000);
+    }).catch(() => {
+      // fallback
+      const ta = document.createElement('textarea');
+      ta.value = lines.join('\n');
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      done(true);
+      setTimeout(() => done(false), 2000);
+    });
+  };
+
   const handleAddGear = (gearId: string, assignee?: string) => {
     addGearToTrip(trip.id, gearId, assignee ?? assigneeFilter === '全部' ? undefined : assigneeFilter);
   };
@@ -86,9 +147,27 @@ export default function TripDetail() {
           </div>
           {trip.route && <div className="trip-route">🗺️ {trip.route}</div>}
         </div>
-        <span className={`status-badge ${trip.status}`}>
-          {trip.status === 'planned' ? '待出发' : '已完成'}
-        </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, position: 'relative' }} className="export-btn-wrap">
+          <span className={`status-badge ${trip.status}`}>
+            {trip.status === 'planned' ? '待出发' : '已完成'}
+          </span>
+          <button className="btn btn-export" onClick={() => setShowExportMenu(!showExportMenu)}>
+            导出 ▾
+          </button>
+          {showExportMenu && (
+            <>
+              <div className="export-overlay" onClick={() => setShowExportMenu(false)} />
+              <div className="export-menu">
+                <button className="export-menu-item" onClick={() => { window.print(); setShowExportMenu(false); }}>
+                  🖨️ 打印 / PDF
+                </button>
+                <button className="export-menu-item" onClick={() => handleCopySummary(trip, gearItems, setCopied)}>
+                  📋 {copied ? '已复制!' : '复制文字摘要'}
+                </button>
+              </div>
+            </>
+          )}
+        </div>
       </div>
 
       {trip.plan && (
