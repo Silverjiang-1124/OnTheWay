@@ -1,11 +1,14 @@
-import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, Link, useParams } from 'react-router-dom';
 import { useStore } from '../store/useStore';
 import { GEAR_CATEGORIES, gearCategoryLabel, type GearCategory } from '../types';
 
 export default function TripForm() {
   const navigate = useNavigate();
-  const { gearItems, addTrip } = useStore();
+  const { id } = useParams<{ id: string }>();
+  const { gearItems, trips, addTrip, updateTrip } = useStore();
+  const existingTrip = id ? trips.find(t => t.id === id) : undefined;
+  const isEdit = !!existingTrip;
 
   const [title, setTitle] = useState('');
   const [location, setLocation] = useState('');
@@ -14,15 +17,43 @@ export default function TripForm() {
   const [route, setRoute] = useState('');
   const [distance, setDistance] = useState('');
   const [elevation, setElevation] = useState('');
+  const [plan, setPlan] = useState('');
   const [members, setMembers] = useState('');
   const [filter, setFilter] = useState<GearCategory | 'all'>('all');
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [dateError, setDateError] = useState('');
+
+  useEffect(() => {
+    if (existingTrip) {
+      setTitle(existingTrip.title);
+      setLocation(existingTrip.location);
+      setStartDate(existingTrip.startDate);
+      setEndDate(existingTrip.endDate);
+      setRoute(existingTrip.route ?? '');
+      setDistance(existingTrip.distance?.toString() ?? '');
+      setElevation(existingTrip.elevation?.toString() ?? '');
+      setMembers(existingTrip.members.join(', '));
+      setPlan(existingTrip.plan ?? '');
+      setSelected(new Set(existingTrip.gearList.map(tg => tg.gearId)));
+    }
+  }, [existingTrip]);
+
+  if (id && !existingTrip) {
+    return (
+      <div className="page">
+        <div style={{ marginBottom: 16 }}>
+          <Link to="/trips" className="back-link">← 返回行程列表</Link>
+        </div>
+        <div className="empty-state"><p>行程不存在</p></div>
+      </div>
+    );
+  }
 
   const filtered = filter === 'all' ? gearItems : gearItems.filter(g => g.category === filter);
-  const toggleSelect = (id: string) => {
+  const toggleSelect = (gearId: string) => {
     setSelected(prev => {
       const next = new Set(prev);
-      if (next.has(id)) next.delete(id); else next.add(id);
+      if (next.has(gearId)) next.delete(gearId); else next.add(gearId);
       return next;
     });
   };
@@ -30,7 +61,12 @@ export default function TripForm() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !location.trim() || !startDate || !endDate) return;
-    addTrip({
+    if (endDate < startDate) {
+      setDateError('结束日期不能早于出发日期');
+      return;
+    }
+    setDateError('');
+    const data = {
       title: title.trim(),
       location: location.trim(),
       startDate,
@@ -38,10 +74,19 @@ export default function TripForm() {
       route: route.trim() || undefined,
       distance: distance ? Number(distance) : undefined,
       elevation: elevation ? Number(elevation) : undefined,
+      plan: plan.trim() || undefined,
       members: members.split(/[,，]/).map(s => s.trim()).filter(Boolean),
-      gearList: Array.from(selected).map(gearId => ({ gearId, packed: false })),
-      status: 'planned',
-    });
+      gearList: Array.from(selected).map(gearId => {
+        const existing = existingTrip?.gearList.find(tg => tg.gearId === gearId);
+        return { gearId, packed: existing?.packed ?? false, assignee: existing?.assignee };
+      }),
+      status: existingTrip?.status ?? 'planned',
+    };
+    if (isEdit) {
+      updateTrip(id!, data);
+    } else {
+      addTrip(data);
+    }
     navigate('/trips');
   };
 
@@ -50,7 +95,7 @@ export default function TripForm() {
       <div style={{ marginBottom: 16 }}>
         <Link to="/trips" className="back-link">← 返回行程列表</Link>
       </div>
-      <h1 className="page-title">新行程</h1>
+      <h1 className="page-title">{isEdit ? '编辑行程' : '新行程'}</h1>
 
       <form onSubmit={handleSubmit} className="trip-form">
         <div className="form-group">
@@ -74,9 +119,10 @@ export default function TripForm() {
           </div>
           <div className="form-group">
             <label>结束日期 *</label>
-            <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} required />
+            <input type="date" value={endDate} onChange={e => { setEndDate(e.target.value); setDateError(''); }} required />
           </div>
         </div>
+        {dateError && <p style={{ color: '#c44536', fontSize: 13, marginTop: -8, marginBottom: 14 }}>{dateError}</p>}
         <div className="form-group">
           <label>路线描述</label>
           <input value={route} onChange={e => setRoute(e.target.value)} placeholder="例: 粗坑→凤阳山→黄茅尖→凤阳湖→南溪村" />
@@ -90,6 +136,12 @@ export default function TripForm() {
             <label>爬升 (m)</label>
             <input type="number" value={elevation} onChange={e => setElevation(e.target.value)} placeholder="可选" />
           </div>
+        </div>
+
+        <div className="form-group">
+          <label>行程计划 (HTML)</label>
+          <textarea rows={8} value={plan} onChange={e => setPlan(e.target.value)}
+            placeholder="输入 HTML 格式的详细行程计划，留空则不显示" style={{ fontFamily: 'monospace', fontSize: 13 }} />
         </div>
 
         {gearItems.length > 0 && (
@@ -122,7 +174,7 @@ export default function TripForm() {
 
         <div className="form-actions">
           <button type="button" className="btn" onClick={() => navigate('/trips')}>取消</button>
-          <button type="submit" className="btn btn-primary">创建行程</button>
+          <button type="submit" className="btn btn-primary">{isEdit ? '保存修改' : '创建行程'}</button>
         </div>
       </form>
     </div>

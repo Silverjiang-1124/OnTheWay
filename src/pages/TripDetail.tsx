@@ -1,4 +1,4 @@
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useStore } from '../store/useStore';
 import { GEAR_CATEGORIES, gearCategoryLabel, type GearCategory } from '../types';
 import { useRef, useState } from 'react';
@@ -6,8 +6,9 @@ import { useRef, useState } from 'react';
 type AssigneeFilter = '全部' | '我' | '公共' | '队友';
 
 export default function TripDetail() {
+  const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
-  const { trips, gearItems, updateTrip, togglePacked, addGearToTrip, removeGearFromTrip } = useStore();
+  const { trips, gearItems, updateTrip, deleteTrip, togglePacked, addGearToTrip, removeGearFromTrip } = useStore();
 
   const trip = trips.find(t => t.id === id);
   if (!trip) {
@@ -61,7 +62,7 @@ export default function TripDetail() {
     updateTrip(trip.id, { status: trip.status === 'completed' ? 'planned' : 'completed' });
   };
 
-  const handleCopySummary = (t: typeof trip, gearMap: Map<string, { name: string; category: string; weight?: number }>, done: (v: boolean) => void) => {
+  const handleCopySummary = (t: typeof trip, done: (v: boolean) => void) => {
     const gearById = new Map(gearItems.map(g => [g.id, g]));
     const lines: string[] = [];
     lines.push(`🏔️ ${t.title}`);
@@ -129,7 +130,8 @@ export default function TripDetail() {
   };
 
   const handleAddGear = (gearId: string, assignee?: string) => {
-    addGearToTrip(trip.id, gearId, assignee ?? assigneeFilter === '全部' ? undefined : assigneeFilter);
+    const a = assignee ?? (assigneeFilter === '全部' ? undefined : assigneeFilter);
+    addGearToTrip(trip.id, gearId, a);
   };
 
   const assigneeCounts = {
@@ -160,9 +162,16 @@ export default function TripDetail() {
           {trip.route && <div className="trip-route">🗺️ {trip.route}</div>}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, position: 'relative' }} className="export-btn-wrap">
+          <Link to={`/trips/${trip.id}/edit`} className="btn btn-export">编辑</Link>
           <button className={`status-badge ${trip.status} clickable`} onClick={toggleStatus} title="点击切换状态">
             {trip.status === 'planned' ? '待出发' : '已完成'}
           </button>
+          <button className="btn btn-export" style={{ color: '#c44536' }} onClick={() => {
+            if (window.confirm(`确定删除行程「${trip.title}」吗？此操作不可恢复。`)) {
+              deleteTrip(trip.id);
+              navigate('/trips');
+            }
+          }}>删除</button>
           <button className="btn btn-export" onClick={() => setShowExportMenu(!showExportMenu)}>
             导出 ▾
           </button>
@@ -173,7 +182,7 @@ export default function TripDetail() {
                 <button className="export-menu-item" onClick={() => { window.print(); setShowExportMenu(false); }}>
                   🖨️ 打印 / PDF
                 </button>
-                <button className="export-menu-item" onClick={() => handleCopySummary(trip, gearItems, setCopied)}>
+                <button className="export-menu-item" onClick={() => handleCopySummary(trip, setCopied)}>
                   📋 {copied ? '已复制!' : '复制文字摘要'}
                 </button>
               </div>
@@ -194,6 +203,14 @@ export default function TripDetail() {
             <iframe ref={iframeRef} className="plan-iframe" srcDoc={planDoc} title="行程计划" />
           </div>
         </section>
+      )}
+
+      {/* Print-only plan content — iframes can't expand in print */}
+      {trip.plan && (
+        <div className="plan-print-only">
+          <h2 className="section-title" style={{ border: 'none', margin: 0, padding: 0, borderBottom: '2px solid var(--accent-light)', marginBottom: 12 }}>📋 行程计划</h2>
+          <div className="plan-print-body" dangerouslySetInnerHTML={{ __html: trip.plan }} />
+        </div>
       )}
 
       <section className="section">
@@ -310,11 +327,22 @@ export default function TripDetail() {
                 </div>
                 <div className="gear-select-grid">
                   {filteredAvailable.map(item => (
-                    <button key={item.id} className="gear-select-btn"
-                      onClick={() => handleAddGear(item.id)}>
-                      <span className="gear-select-name">{item.name}</span>
-                      <span className="gear-select-cat">{gearCategoryLabel(item.category)}</span>
-                    </button>
+                    <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <button className="gear-select-btn" style={{ flex: 1 }}
+                        onClick={() => handleAddGear(item.id)}>
+                        <span className="gear-select-name">{item.name}</span>
+                        <span className="gear-select-cat">{gearCategoryLabel(item.category)}</span>
+                      </button>
+                      <select className="assignee-picker" title="指定负责人"
+                        value={assigneeFilter === '全部' ? '我' : assigneeFilter}
+                        onChange={e => handleAddGear(item.id, e.target.value)}
+                        onClick={e => e.stopPropagation()}
+                        style={{ padding: '4px 6px', borderRadius: 6, border: '1px solid var(--border)', fontSize: 12, background: 'var(--surface)', cursor: 'pointer', fontFamily: 'inherit' }}>
+                        <option value="我">我</option>
+                        <option value="公共">公共</option>
+                        <option value="队友">队友</option>
+                      </select>
+                    </div>
                   ))}
                 </div>
               </>

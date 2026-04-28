@@ -125,7 +125,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       trips: prev.trips.map(t =>
         t.id !== tripId ? t : {
           ...t,
-          gearList: [...t.gearList, { gearId, packed: false, assignee }],
+          gearList: t.gearList.some(tg => tg.gearId === gearId)
+            ? t.gearList
+            : [...t.gearList, { gearId, packed: false, assignee }],
         }
       ),
     }));

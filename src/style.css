@@ -562,6 +562,12 @@ a { color: inherit; text-decoration: none; }
   display: block;
 }
 
+.plan-print-only { display: none; }
+.plan-print-body { font-size: 14px; line-height: 1.7; }
+.plan-print-body table { width: 100%; border-collapse: collapse; margin: 8px 0; }
+.plan-print-body th, .plan-print-body td { padding: 6px 8px; border: 1px solid #e4e0d8; text-align: left; }
+.plan-print-body th { background: #f0ede6; font-size: 12px; }
+
 /* ---- Packing row wrap ---- */
 .packing-row-wrap {
   display: flex;
@@ -685,8 +691,8 @@ a { color: inherit; text-decoration: none; }
   .page-header { page-break-after: avoid; }
 
   .plan-hidden { display: block !important; }
-  .plan-iframe-wrap { border: none; page-break-inside: avoid; }
-  .plan-iframe { height: auto; }
+  .plan-iframe-wrap { display: none !important; }
+  .plan-print-only { display: block !important; }
 
   .packing-row-wrap { break-inside: avoid; }
   .packing-row input[type="checkbox"] { display: none; }

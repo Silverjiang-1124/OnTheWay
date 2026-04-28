@@ -92,12 +92,13 @@ function GearForm({ initial, onSave, onDelete, onClose }: {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
+    const q = Math.max(1, Math.floor(Number(quantity)) || 1);
     onSave({
       name: name.trim(),
       category,
       brand: brand.trim() || undefined,
       weight: weight ? Number(weight) : undefined,
-      quantity,
+      quantity: q,
       notes: notes.trim() || undefined,
     });
   };
