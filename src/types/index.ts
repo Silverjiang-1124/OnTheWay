@@ -27,7 +27,10 @@ export interface GearItem {
 export interface TripGear {
   gearId: string;
   packed: boolean;
+  assignee?: string;
 }
+
+export const ASSIGNEES = ['我', '队友', '公共'] as const;
 
 export type TripStatus = 'planned' | 'completed';
 

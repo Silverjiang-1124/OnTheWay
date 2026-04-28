@@ -471,6 +471,17 @@ a { color: inherit; text-decoration: none; }
 
 .packed-text { text-decoration: line-through; color: var(--text-secondary); }
 
+.assignee-tag {
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 8px;
+  font-weight: 600;
+  margin-left: auto;
+}
+.assignee-tag.我 { background: var(--accent-light); color: var(--accent); }
+.assignee-tag.公共 { background: #fef0e0; color: #a86400; }
+.assignee-tag.队友 { background: #e3edf7; color: #1a5276; }
+
 /* ---- Journal ---- */
 .journal-text {
   white-space: pre-wrap;

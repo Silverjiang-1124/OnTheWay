@@ -232,8 +232,68 @@ export function createSeedTrip(gearList: GearItem[]): Trip {
     plan: planHtml,
     distance: 31,
     elevation: 3000,
-    members: ['我'],
-    gearList: gearList.map(g => ({ gearId: g.id, packed: false })),
+    members: ['我', '队友'],
+    gearList: gearList.map(g => {
+      const name = g.name;
+      const brand = g.brand || '';
+      if (
+        name.includes('睡袋') && brand.includes('G1000') ||
+        name.includes('充气睡垫') ||
+        name.includes('蛋巢') ||
+        name.includes('充气枕')
+      ) return { gearId: g.id, packed: false, assignee: '我' };
+      if (
+        name.includes('双人帐') ||
+        name.includes('单人帐') ||
+        name.includes('炉头') ||
+        name.includes('套锅') ||
+        name.includes('气罐') ||
+        name.includes('净水器') ||
+        name.includes('打火机') ||
+        name.includes('折叠水桶') ||
+        name.includes('防风板') ||
+        name.includes('充电宝') ||
+        name.includes('急救包') ||
+        name.includes('大米') ||
+        name.includes('面条') ||
+        name.includes('腊肠') ||
+        name.includes('脱水蔬菜') ||
+        name.includes('汤料') ||
+        name.includes('垃圾袋')
+      ) return { gearId: g.id, packed: false, assignee: '公共' };
+      if (
+        name.includes('水袋 3L') ||
+        name.includes('保温杯') ||
+        name.includes('餐具') ||
+        name.includes('速干') ||
+        name.includes('抓绒') ||
+        name.includes('羽绒') ||
+        name.includes('冲锋') ||
+        name.includes('雨衣') ||
+        name.includes('登山鞋') ||
+        name.includes('遮阳帽') ||
+        name.includes('保暖帽') ||
+        name.includes('手套') ||
+        name.includes('徒步袜') ||
+        name.includes('魔术头巾') ||
+        name.includes('头灯') ||
+        name.includes('手机') ||
+        name.includes('能量胶') ||
+        name.includes('坚果') ||
+        name.includes('牛肉干') ||
+        name.includes('士力架') ||
+        name.includes('压缩饼干') ||
+        name.includes('电解质') ||
+        name.includes('重装包') ||
+        name.includes('背包防水罩') ||
+        name.includes('登山杖') ||
+        name.includes('护膝') ||
+        name.includes('急救毯') ||
+        name.includes('防晒霜')
+      ) return { gearId: g.id, packed: false, assignee: '我' };
+      return { gearId: g.id, packed: false, assignee: '队友' };
+    }),
+    status: 'planned',
     status: 'planned',
     journal: '出发前准备：\n· 包车已联系大兵（18857823017），南溪村→粗坑 350元\n· 龙泉买气罐×3\n· 两步路已下载离线轨迹\n· 户外保险已买\n—\n记录回来后补写 ✍️',
     rating: undefined,

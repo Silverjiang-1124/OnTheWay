@@ -1,11 +1,12 @@
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { useStore } from '../store/useStore';
 import { gearCategoryLabel } from '../types';
 import { useState } from 'react';
 
+type AssigneeFilter = '全部' | '我' | '公共' | '队友';
+
 export default function TripDetail() {
   const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
   const { trips, gearItems, updateTrip, togglePacked } = useStore();
 
   const trip = trips.find(t => t.id === id);
@@ -17,24 +18,39 @@ export default function TripDetail() {
   const [journalText, setJournalText] = useState(trip.journal ?? '');
   const [rating, setRating] = useState(trip.rating ?? 0);
   const [showPlan, setShowPlan] = useState(false);
+  const [assigneeFilter, setAssigneeFilter] = useState<AssigneeFilter>('我');
 
   const gearMap = new Map(gearItems.map(g => [g.id, g]));
 
-  const groupedGear: Record<string, { gearId: string; name: string; catLabel: string; packed: boolean }[]> = {};
-  for (const tg of trip.gearList) {
+  const filteredGearList = trip.gearList.filter(tg => {
+    if (assigneeFilter === '全部') return true;
+    const gear = gearMap.get(tg.gearId);
+    if (!gear) return false;
+    return (tg.assignee ?? '我') === assigneeFilter;
+  });
+
+  const groupedGear: Record<string, { gearId: string; name: string; packed: boolean; assignee?: string }[]> = {};
+  for (const tg of filteredGearList) {
     const gear = gearMap.get(tg.gearId);
     if (!gear) continue;
     const cat = gearCategoryLabel(gear.category);
     if (!groupedGear[cat]) groupedGear[cat] = [];
-    groupedGear[cat].push({ gearId: tg.gearId, name: gear.name, catLabel: cat, packed: tg.packed });
+    groupedGear[cat].push({ gearId: tg.gearId, name: gear.name, packed: tg.packed, assignee: tg.assignee });
   }
 
-  const packedCount = trip.gearList.filter(g => g.packed).length;
-  const totalCount = trip.gearList.length;
+  const packedCount = filteredGearList.filter(g => g.packed).length;
+  const totalCount = filteredGearList.length;
 
   const handleSaveJournal = () => {
     updateTrip(trip.id, { journal: journalText || undefined, rating: rating || undefined, status: 'completed' });
     setEditingJournal(false);
+  };
+
+  const assigneeCounts = {
+    全部: trip.gearList.length,
+    我: trip.gearList.filter(tg => (tg.assignee ?? '我') === '我').length,
+    公共: trip.gearList.filter(tg => tg.assignee === '公共').length,
+    队友: trip.gearList.filter(tg => tg.assignee === '队友').length,
   };
 
   return (
@@ -77,16 +93,27 @@ export default function TripDetail() {
       )}
 
       <section className="section">
-        <h2 className="section-title">
-          打包清单
-          {totalCount > 0 && <span className="text-muted" style={{ fontSize: 14, fontWeight: 400, marginLeft: 8 }}>
-            ({packedCount}/{totalCount})
-          </span>}
-        </h2>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+          <h2 className="section-title" style={{ border: 'none', margin: 0, padding: 0 }}>
+            🎒 打包清单
+            <span className="text-muted" style={{ fontSize: 14, fontWeight: 400, marginLeft: 8 }}>
+              ({packedCount}/{totalCount})
+            </span>
+          </h2>
+        </div>
+
+        <div className="filter-tabs" style={{ marginBottom: 14 }}>
+          {(['全部', '我', '公共', '队友'] as const).map(a => (
+            <button key={a} className={`tab ${assigneeFilter === a ? 'active' : ''}`}
+              onClick={() => setAssigneeFilter(a)}>
+              {a} <span className="count">{assigneeCounts[a]}</span>
+            </button>
+          ))}
+        </div>
 
         {totalCount === 0 && (
           <div className="empty-state" style={{ padding: 20 }}>
-            <p>该行程尚未添加装备</p>
+            <p>该筛选条件下没有装备</p>
           </div>
         )}
 
@@ -98,6 +125,9 @@ export default function TripDetail() {
                 <input type="checkbox" checked={item.packed}
                   onChange={() => togglePacked(trip.id, item.gearId)} />
                 <span className={item.packed ? 'packed-text' : ''}>{item.name}</span>
+                {item.assignee && assigneeFilter === '全部' && (
+                  <span className={`assignee-tag ${item.assignee}`}>{item.assignee}</span>
+                )}
               </label>
             ))}
           </div>
