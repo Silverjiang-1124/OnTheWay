@@ -53,8 +53,12 @@ export default function TripDetail() {
   const totalCount = filteredGearList.length;
 
   const handleSaveJournal = () => {
-    updateTrip(trip.id, { journal: journalText || undefined, rating: rating || undefined, status: 'completed' });
+    updateTrip(trip.id, { journal: journalText || undefined, rating: rating || undefined });
     setEditingJournal(false);
+  };
+
+  const toggleStatus = () => {
+    updateTrip(trip.id, { status: trip.status === 'completed' ? 'planned' : 'completed' });
   };
 
   const handleCopySummary = (t: typeof trip, gearMap: Map<string, { name: string; category: string; weight?: number }>, done: (v: boolean) => void) => {
@@ -148,9 +152,9 @@ export default function TripDetail() {
           {trip.route && <div className="trip-route">🗺️ {trip.route}</div>}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, position: 'relative' }} className="export-btn-wrap">
-          <span className={`status-badge ${trip.status}`}>
+          <button className={`status-badge ${trip.status} clickable`} onClick={toggleStatus} title="点击切换状态">
             {trip.status === 'planned' ? '待出发' : '已完成'}
-          </span>
+          </button>
           <button className="btn btn-export" onClick={() => setShowExportMenu(!showExportMenu)}>
             导出 ▾
           </button>

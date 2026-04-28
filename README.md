@@ -60,6 +60,8 @@ export default defineConfig([
       reactX.configs['recommended-typescript'],
       // Enable lint rules for React DOM
       reactDom.configs.recommended,
+
+      
     ],
     languageOptions: {
       parserOptions: {

@@ -223,6 +223,8 @@ a { color: inherit; text-decoration: none; }
 
 .status-badge.planned { background: #fef0e0; color: #a86400; }
 .status-badge.completed { background: var(--accent-light); color: var(--accent); }
+.status-badge.clickable { cursor: pointer; border: none; font-family: inherit; }
+.status-badge.clickable:hover { opacity: .8; }
 
 .packing-bar-wrap {
   display: flex;
