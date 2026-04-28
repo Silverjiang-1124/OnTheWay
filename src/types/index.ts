@@ -38,6 +38,7 @@ export interface Trip {
   startDate: string;
   endDate: string;
   route?: string;
+  plan?: string;
   distance?: number;
   elevation?: number;
   members: string[];

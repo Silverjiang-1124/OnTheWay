@@ -16,6 +16,7 @@ export default function TripDetail() {
   const [editingJournal, setEditingJournal] = useState(false);
   const [journalText, setJournalText] = useState(trip.journal ?? '');
   const [rating, setRating] = useState(trip.rating ?? 0);
+  const [showPlan, setShowPlan] = useState(false);
 
   const gearMap = new Map(gearItems.map(g => [g.id, g]));
 
@@ -52,12 +53,28 @@ export default function TripDetail() {
             {trip.elevation && <span>🏔️ {trip.elevation}m</span>}
             {trip.members.length > 0 && <span>👥 {trip.members.join(', ')}</span>}
           </div>
-          {trip.route && <div className="trip-route">🗺️ 路线：{trip.route}</div>}
+          {trip.route && <div className="trip-route">🗺️ {trip.route}</div>}
         </div>
         <span className={`status-badge ${trip.status}`}>
           {trip.status === 'planned' ? '待出发' : '已完成'}
         </span>
       </div>
+
+      {trip.plan && (
+        <section className="section">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+            <h2 className="section-title" style={{ border: 'none', margin: 0, padding: 0 }}>📋 行程计划</h2>
+            <button className="btn" onClick={() => setShowPlan(!showPlan)}>
+              {showPlan ? '收起' : '展开'}
+            </button>
+          </div>
+          {showPlan && (
+            <div className="plan-html-wrap">
+              <div dangerouslySetInnerHTML={{ __html: trip.plan }} />
+            </div>
+          )}
+        </section>
+      )}
 
       <section className="section">
         <h2 className="section-title">

@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import type { GearItem, Trip, TripGear } from '../types';
 import { genId } from '../types';
+import { seedGear, createSeedTrip } from './seedData';
 
 const STORAGE_KEY = 'ontheway_data';
 
@@ -24,9 +25,18 @@ interface StoreData {
 function loadData(): StoreData {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed.gearItems?.length || parsed.trips?.length) {
+        return parsed;
+      }
+    }
   } catch { /* ignore */ }
-  return { gearItems: [], trips: [] };
+  // First visit — seed data
+  const seededTrip = createSeedTrip(seedGear);
+  const data = { gearItems: seedGear, trips: [seededTrip] };
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  return data;
 }
 
 function saveData(data: StoreData) {
@@ -94,9 +104,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <StoreContext value={{ gearItems: data.gearItems, trips: data.trips, addGear, updateGear, deleteGear, addTrip, updateTrip, deleteTrip, togglePacked }}>
+    <StoreContext.Provider value={{ gearItems: data.gearItems, trips: data.trips, addGear, updateGear, deleteGear, addTrip, updateTrip, deleteTrip, togglePacked }}>
       {children}
-    </StoreContext>
+    </StoreContext.Provider>
   );
 }
 
