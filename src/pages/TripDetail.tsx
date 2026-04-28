@@ -1,0 +1,130 @@
+import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useStore } from '../store/useStore';
+import { gearCategoryLabel } from '../types';
+import { useState } from 'react';
+
+export default function TripDetail() {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const { trips, gearItems, updateTrip, togglePacked } = useStore();
+
+  const trip = trips.find(t => t.id === id);
+  if (!trip) {
+    return <div className="page"><div className="empty-state"><p>行程不存在</p><Link to="/trips">返回列表</Link></div></div>;
+  }
+
+  const [editingJournal, setEditingJournal] = useState(false);
+  const [journalText, setJournalText] = useState(trip.journal ?? '');
+  const [rating, setRating] = useState(trip.rating ?? 0);
+
+  const gearMap = new Map(gearItems.map(g => [g.id, g]));
+
+  const groupedGear: Record<string, { gearId: string; name: string; catLabel: string; packed: boolean }[]> = {};
+  for (const tg of trip.gearList) {
+    const gear = gearMap.get(tg.gearId);
+    if (!gear) continue;
+    const cat = gearCategoryLabel(gear.category);
+    if (!groupedGear[cat]) groupedGear[cat] = [];
+    groupedGear[cat].push({ gearId: tg.gearId, name: gear.name, catLabel: cat, packed: tg.packed });
+  }
+
+  const packedCount = trip.gearList.filter(g => g.packed).length;
+  const totalCount = trip.gearList.length;
+
+  const handleSaveJournal = () => {
+    updateTrip(trip.id, { journal: journalText || undefined, rating: rating || undefined, status: 'completed' });
+    setEditingJournal(false);
+  };
+
+  return (
+    <div className="page">
+      <div style={{ marginBottom: 16 }}>
+        <Link to="/trips" className="back-link">← 返回行程列表</Link>
+      </div>
+
+      <div className="page-header">
+        <div>
+          <h1 className="page-title">{trip.title}</h1>
+          <div className="trip-detail-meta">
+            <span>📍 {trip.location}</span>
+            <span>📅 {trip.startDate} ~ {trip.endDate}</span>
+            {trip.distance && <span>📏 {trip.distance}km</span>}
+            {trip.elevation && <span>🏔️ {trip.elevation}m</span>}
+            {trip.members.length > 0 && <span>👥 {trip.members.join(', ')}</span>}
+          </div>
+          {trip.route && <div className="trip-route">🗺️ 路线：{trip.route}</div>}
+        </div>
+        <span className={`status-badge ${trip.status}`}>
+          {trip.status === 'planned' ? '待出发' : '已完成'}
+        </span>
+      </div>
+
+      <section className="section">
+        <h2 className="section-title">
+          打包清单
+          {totalCount > 0 && <span className="text-muted" style={{ fontSize: 14, fontWeight: 400, marginLeft: 8 }}>
+            ({packedCount}/{totalCount})
+          </span>}
+        </h2>
+
+        {totalCount === 0 && (
+          <div className="empty-state" style={{ padding: 20 }}>
+            <p>该行程尚未添加装备</p>
+          </div>
+        )}
+
+        {Object.entries(groupedGear).map(([cat, items]) => (
+          <div key={cat} style={{ marginBottom: 16 }}>
+            <h3 className="cat-title">{cat}</h3>
+            {items.map(item => (
+              <label key={item.gearId} className="packing-row">
+                <input type="checkbox" checked={item.packed}
+                  onChange={() => togglePacked(trip.id, item.gearId)} />
+                <span className={item.packed ? 'packed-text' : ''}>{item.name}</span>
+              </label>
+            ))}
+          </div>
+        ))}
+      </section>
+
+      <section className="section">
+        <h2 className="section-title">游记</h2>
+        {trip.journal && !editingJournal ? (
+          <div>
+            {trip.rating && <div style={{ marginBottom: 8 }}>⭐ {'★'.repeat(trip.rating)}{'☆'.repeat(5 - trip.rating)}</div>}
+            <div className="journal-text">{trip.journal}</div>
+            <button className="btn" style={{ marginTop: 12 }} onClick={() => { setJournalText(trip.journal ?? ''); setRating(trip.rating ?? 0); setEditingJournal(true); }}>
+              编辑
+            </button>
+          </div>
+        ) : editingJournal ? (
+          <div>
+            <div className="form-group">
+              <label>评分</label>
+              <div className="star-rating">
+                {[1, 2, 3, 4, 5].map(n => (
+                  <button key={n} type="button" className={`star ${n <= rating ? 'on' : ''}`}
+                    onClick={() => setRating(n)}>★</button>
+                ))}
+              </div>
+            </div>
+            <div className="form-group">
+              <label>记录</label>
+              <textarea rows={6} value={journalText} onChange={e => setJournalText(e.target.value)}
+                placeholder="天气、路况、印象深刻的事、感受…" />
+            </div>
+            <div className="form-actions">
+              <button className="btn" onClick={() => setEditingJournal(false)}>取消</button>
+              <button className="btn btn-primary" onClick={handleSaveJournal}>保存</button>
+            </div>
+          </div>
+        ) : (
+          <div>
+            <p className="text-muted" style={{ marginBottom: 8 }}>还没有记录</p>
+            <button className="btn btn-primary" onClick={() => setEditingJournal(true)}>写游记</button>
+          </div>
+        )}
+      </section>
+    </div>
+  );
+}
