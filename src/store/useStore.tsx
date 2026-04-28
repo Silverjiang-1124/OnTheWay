@@ -1,9 +1,10 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
-import type { GearItem, Trip, TripGear } from '../types';
+import type { GearItem, Trip } from '../types';
 import { genId } from '../types';
-import { seedGear, createSeedTrip } from './seedData';
+import { createSeedTrip } from './seedData';
 
 const STORAGE_KEY = 'ontheway_data';
+const CURRENT_VERSION = 2;
 
 interface Store {
   gearItems: GearItem[];
@@ -15,9 +16,12 @@ interface Store {
   updateTrip: (id: string, data: Partial<Trip>) => void;
   deleteTrip: (id: string) => void;
   togglePacked: (tripId: string, gearId: string) => void;
+  addGearToTrip: (tripId: string, gearId: string, assignee?: string) => void;
+  removeGearFromTrip: (tripId: string, gearId: string) => void;
 }
 
 interface StoreData {
+  version: number;
   gearItems: GearItem[];
   trips: Trip[];
 }
@@ -27,14 +31,26 @@ function loadData(): StoreData {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (parsed.gearItems?.length || parsed.trips?.length) {
-        return parsed;
+      // v1 → v2: clear all gear items and trip gear lists
+      if (!parsed.version || parsed.version < CURRENT_VERSION) {
+        const migrated: StoreData = {
+          version: CURRENT_VERSION,
+          gearItems: [],
+          trips: (parsed.trips || []).map((t: Trip) => ({
+            ...t,
+            gearList: [],
+            members: t.members?.length ? t.members : ['我', '队友'],
+          })),
+        };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(migrated));
+        return migrated;
       }
+      return parsed;
     }
   } catch { /* ignore */ }
-  // First visit — seed data
-  const seededTrip = createSeedTrip(seedGear);
-  const data = { gearItems: seedGear, trips: [seededTrip] };
+  // First visit — seed data (empty gear, trip with plan only)
+  const seededTrip = createSeedTrip();
+  const data: StoreData = { version: CURRENT_VERSION, gearItems: [], trips: [seededTrip] };
   localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
   return data;
 }
@@ -103,8 +119,37 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     }));
   };
 
+  const addGearToTrip = (tripId: string, gearId: string, assignee?: string) => {
+    setData(prev => ({
+      ...prev,
+      trips: prev.trips.map(t =>
+        t.id !== tripId ? t : {
+          ...t,
+          gearList: [...t.gearList, { gearId, packed: false, assignee }],
+        }
+      ),
+    }));
+  };
+
+  const removeGearFromTrip = (tripId: string, gearId: string) => {
+    setData(prev => ({
+      ...prev,
+      trips: prev.trips.map(t =>
+        t.id !== tripId ? t : {
+          ...t,
+          gearList: t.gearList.filter(tg => tg.gearId !== gearId),
+        }
+      ),
+    }));
+  };
+
   return (
-    <StoreContext.Provider value={{ gearItems: data.gearItems, trips: data.trips, addGear, updateGear, deleteGear, addTrip, updateTrip, deleteTrip, togglePacked }}>
+    <StoreContext.Provider value={{
+      gearItems: data.gearItems, trips: data.trips,
+      addGear, updateGear, deleteGear,
+      addTrip, updateTrip, deleteTrip,
+      togglePacked, addGearToTrip, removeGearFromTrip,
+    }}>
       {children}
     </StoreContext.Provider>
   );

@@ -546,20 +546,62 @@ a { color: inherit; text-decoration: none; }
 .gear-select-name { flex: 1; }
 .gear-select-cat { font-size: 11px; color: var(--text-secondary); }
 
-/* ---- Plan HTML ---- */
-.plan-html-wrap {
-  background: #f7f5f0;
+/* ---- Plan iframe ---- */
+.plan-iframe-wrap {
   border-radius: 10px;
-  max-height: 600px;
-  overflow-y: auto;
-  padding: 4px;
   border: 1px solid var(--border);
+  overflow: hidden;
 }
-.plan-html-wrap > div {
-  padding: 0;
+.plan-iframe {
+  width: 100%;
+  height: 520px;
+  border: none;
+  display: block;
 }
-.plan-html-wrap > div body {
-  padding: 16px;
+
+/* ---- Packing row wrap ---- */
+.packing-row-wrap {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.packing-row-wrap:hover .btn-remove {
+  opacity: 1;
+}
+
+.btn-remove {
+  opacity: 0;
+  background: none;
+  border: none;
+  color: #c44536;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 4px 6px;
+  border-radius: 4px;
+  transition: opacity 0.1s;
+}
+.btn-remove:hover {
+  background: #fde8e4;
+}
+
+/* ---- Gear select btn (in modal) ---- */
+.gear-select-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  cursor: pointer;
+  font-size: 13px;
+  text-align: left;
+  transition: all 0.1s;
+  font-family: inherit;
+}
+.gear-select-btn:hover {
+  border-color: var(--accent);
+  background: var(--accent-light);
 }
 
 /* ---- Back link ---- */

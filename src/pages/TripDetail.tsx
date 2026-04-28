@@ -1,13 +1,13 @@
 import { useParams, Link } from 'react-router-dom';
 import { useStore } from '../store/useStore';
-import { gearCategoryLabel } from '../types';
-import { useState } from 'react';
+import { GEAR_CATEGORIES, gearCategoryLabel, type GearCategory } from '../types';
+import { useRef, useState } from 'react';
 
 type AssigneeFilter = '全部' | '我' | '公共' | '队友';
 
 export default function TripDetail() {
   const { id } = useParams<{ id: string }>();
-  const { trips, gearItems, updateTrip, togglePacked } = useStore();
+  const { trips, gearItems, updateTrip, togglePacked, addGearToTrip, removeGearFromTrip } = useStore();
 
   const trip = trips.find(t => t.id === id);
   if (!trip) {
@@ -19,13 +19,22 @@ export default function TripDetail() {
   const [rating, setRating] = useState(trip.rating ?? 0);
   const [showPlan, setShowPlan] = useState(false);
   const [assigneeFilter, setAssigneeFilter] = useState<AssigneeFilter>('我');
+  const [showAddGear, setShowAddGear] = useState(false);
+  const [addFilter, setAddFilter] = useState<GearCategory | 'all'>('all');
+  const iframeRef = useRef<HTMLIFrameElement>(null);
 
   const gearMap = new Map(gearItems.map(g => [g.id, g]));
+  const tripGearIds = new Set(trip.gearList.map(tg => tg.gearId));
 
+  // Available gear (not yet in trip)
+  const availableGear = gearItems.filter(g => !tripGearIds.has(g.id));
+  const filteredAvailable = addFilter === 'all'
+    ? availableGear
+    : availableGear.filter(g => g.category === addFilter);
+
+  // Packing list
   const filteredGearList = trip.gearList.filter(tg => {
     if (assigneeFilter === '全部') return true;
-    const gear = gearMap.get(tg.gearId);
-    if (!gear) return false;
     return (tg.assignee ?? '我') === assigneeFilter;
   });
 
@@ -46,12 +55,18 @@ export default function TripDetail() {
     setEditingJournal(false);
   };
 
+  const handleAddGear = (gearId: string, assignee?: string) => {
+    addGearToTrip(trip.id, gearId, assignee ?? assigneeFilter === '全部' ? undefined : assigneeFilter);
+  };
+
   const assigneeCounts = {
     全部: trip.gearList.length,
     我: trip.gearList.filter(tg => (tg.assignee ?? '我') === '我').length,
     公共: trip.gearList.filter(tg => tg.assignee === '公共').length,
     队友: trip.gearList.filter(tg => tg.assignee === '队友').length,
   };
+
+  const planDoc = trip.plan ? wrapPlanHtml(trip.plan) : '';
 
   return (
     <div className="page">
@@ -78,15 +93,15 @@ export default function TripDetail() {
 
       {trip.plan && (
         <section className="section">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
             <h2 className="section-title" style={{ border: 'none', margin: 0, padding: 0 }}>📋 行程计划</h2>
             <button className="btn" onClick={() => setShowPlan(!showPlan)}>
               {showPlan ? '收起' : '展开'}
             </button>
           </div>
           {showPlan && (
-            <div className="plan-html-wrap">
-              <div dangerouslySetInnerHTML={{ __html: trip.plan }} />
+            <div className="plan-iframe-wrap">
+              <iframe ref={iframeRef} className="plan-iframe" srcDoc={planDoc} title="行程计划" />
             </div>
           )}
         </section>
@@ -100,6 +115,11 @@ export default function TripDetail() {
               ({packedCount}/{totalCount})
             </span>
           </h2>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button className="btn" onClick={() => setShowAddGear(true)} disabled={gearItems.length === 0}>
+              + 添加装备
+            </button>
+          </div>
         </div>
 
         <div className="filter-tabs" style={{ marginBottom: 14 }}>
@@ -113,7 +133,8 @@ export default function TripDetail() {
 
         {totalCount === 0 && (
           <div className="empty-state" style={{ padding: 20 }}>
-            <p>该筛选条件下没有装备</p>
+            <p>还没有装备，点击「添加装备」从装备库导入</p>
+            {gearItems.length === 0 && <p style={{ fontSize: 13, marginTop: 4 }}>装备库也没有，先去 <Link to="/gear">装备库</Link> 录入吧</p>}
           </div>
         )}
 
@@ -121,14 +142,18 @@ export default function TripDetail() {
           <div key={cat} style={{ marginBottom: 16 }}>
             <h3 className="cat-title">{cat}</h3>
             {items.map(item => (
-              <label key={item.gearId} className="packing-row">
-                <input type="checkbox" checked={item.packed}
-                  onChange={() => togglePacked(trip.id, item.gearId)} />
-                <span className={item.packed ? 'packed-text' : ''}>{item.name}</span>
-                {item.assignee && assigneeFilter === '全部' && (
-                  <span className={`assignee-tag ${item.assignee}`}>{item.assignee}</span>
-                )}
-              </label>
+              <div key={item.gearId} className="packing-row-wrap">
+                <label className="packing-row" style={{ flex: 1 }}>
+                  <input type="checkbox" checked={item.packed}
+                    onChange={() => togglePacked(trip.id, item.gearId)} />
+                  <span className={item.packed ? 'packed-text' : ''}>{item.name}</span>
+                  {item.assignee && assigneeFilter === '全部' && (
+                    <span className={`assignee-tag ${item.assignee}`}>{item.assignee}</span>
+                  )}
+                </label>
+                <button className="btn-remove" title="移除此装备"
+                  onClick={() => removeGearFromTrip(trip.id, item.gearId)}>✕</button>
+              </div>
             ))}
           </div>
         ))}
@@ -172,6 +197,53 @@ export default function TripDetail() {
           </div>
         )}
       </section>
+
+      {showAddGear && (
+        <div className="modal-overlay" onClick={() => setShowAddGear(false)}>
+          <div className="modal" style={{ maxWidth: 520 }} onClick={e => e.stopPropagation()}>
+            <h2 className="modal-title">添加装备</h2>
+            {availableGear.length === 0 ? (
+              <p className="text-muted">装备库没有可添加的装备了</p>
+            ) : (
+              <>
+                <div className="filter-tabs" style={{ marginBottom: 10 }}>
+                  <button className={`tab small ${addFilter === 'all' ? 'active' : ''}`} onClick={() => setAddFilter('all')}>全部</button>
+                  {GEAR_CATEGORIES.map(cat => {
+                    const count = availableGear.filter(g => g.category === cat.value).length;
+                    if (!count) return null;
+                    return (
+                      <button key={cat.value} className={`tab small ${addFilter === cat.value ? 'active' : ''}`}
+                        onClick={() => setAddFilter(cat.value)}>
+                        {cat.label} <span className="count">{count}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+                <div className="gear-select-grid">
+                  {filteredAvailable.map(item => (
+                    <button key={item.id} className="gear-select-btn"
+                      onClick={() => handleAddGear(item.id)}>
+                      <span className="gear-select-name">{item.name}</span>
+                      <span className="gear-select-cat">{gearCategoryLabel(item.category)}</span>
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+            <div className="form-actions" style={{ marginTop: 16 }}>
+              <div style={{ flex: 1 }} />
+              <button className="btn" onClick={() => setShowAddGear(false)}>关闭</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
+}
+
+function wrapPlanHtml(fragment: string): string {
+  return `<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<style>body{margin:0;background:#f7f5f0;font-family:-apple-system,'PingFang SC','Noto Sans SC','Microsoft YaHei',sans-serif;line-height:1.6;color:#2c2c2c;}</style>
+</head><body style="padding:16px;">${fragment}</body></html>`;
 }
