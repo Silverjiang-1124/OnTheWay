@@ -19,6 +19,30 @@
   --color-red-light: #fee2e2;
 }
 
+.trip-plan-shell {
+  background: #f7f5f0;
+}
+
+.trip-plan-content {
+  padding: 16px;
+  color: #2c2c2c;
+  font-family: -apple-system, "PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+  line-height: 1.6;
+}
+
+.trip-plan-content * {
+  box-sizing: border-box;
+}
+
+.trip-plan-content table {
+  max-width: 100%;
+}
+
+.trip-plan-content img {
+  max-width: 100%;
+  height: auto;
+}
+
 @media print {
   @page {
     size: A4;
@@ -63,5 +87,9 @@
 
   .hidden.print\:block {
     display: block !important;
+  }
+
+  .trip-plan-content {
+    padding: 0 !important;
   }
 }

@@ -211,11 +211,11 @@ function TripFormFields({ existingTrip, gearItems, addTrip, updateTrip }: TripFo
         </section>
 
         <div>
-          <label className="text-[10px] font-black tracking-wider uppercase text-slate-500 mb-1.5 block">行程计划 (HTML)</label>
+          <label className="text-[10px] font-black tracking-wider uppercase text-slate-500 mb-1.5 block">行程计划</label>
           <textarea rows={8} value={plan} onChange={e => setPlan(e.target.value)}
-            placeholder="输入 HTML 格式的详细行程计划，留空则不显示"
+            placeholder="输入行程计划片段，支持当前示例使用的 HTML 样式；留空则不显示"
             className="w-full px-4 py-3 border border-slate-100 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent transition-all bg-surface resize-y min-h-[120px] font-mono" />
-          <p className="text-xs text-slate-400 mt-2">展示时会自动移除脚本、事件属性和危险链接；后续可迁移为 Markdown/结构化日程。</p>
+          <p className="text-xs text-slate-400 mt-2">展示时直接渲染在页面内，并自动移除脚本、事件属性和危险链接；后续可迁移为 Markdown/结构化日程。</p>
         </div>
 
         {gearItems.length > 0 && (

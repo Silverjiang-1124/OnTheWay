@@ -80,6 +80,28 @@ function normalizeData(raw: unknown): StoreData | null {
   return { version: CURRENT_VERSION, gearItems, trips };
 }
 
+function applySeedGearDefaults(data: StoreData): StoreData {
+  const seedByName = new Map(seedGear.map(g => [g.name, g]));
+  const existingNames = new Set(data.gearItems.map(g => g.name));
+  const gearItems = data.gearItems.map(g => {
+    const seed = seedByName.get(g.name);
+    if (!seed) return g;
+    return {
+      ...g,
+      brand: g.brand ?? seed.brand,
+      weight: g.weight ?? seed.weight,
+      notes: g.notes ?? seed.notes,
+    };
+  });
+  const newSeedGear = seedGear.filter(g => !existingNames.has(g.name));
+
+  return {
+    ...data,
+    version: CURRENT_VERSION,
+    gearItems: [...gearItems, ...newSeedGear],
+  };
+}
+
 function loadData(): StoreData {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -88,16 +110,9 @@ function loadData(): StoreData {
       let data = normalizeData(parsed);
       if (!data) throw new Error('normalize failed');
 
-      // Migrate: populate missing weights from seed data by name match
-      if (!parsed.version || parsed.version < CURRENT_VERSION) {
-        const weightMap = new Map(seedGear.filter(g => g.weight).map(g => [g.name, g.weight]));
-        data = {
-          ...data,
-          gearItems: data.gearItems.map(g => ({
-            ...g,
-            weight: g.weight ?? weightMap.get(g.name) ?? undefined,
-          })),
-        };
+      const withSeedDefaults = applySeedGearDefaults(data);
+      if (JSON.stringify(withSeedDefaults) !== JSON.stringify(data) || !parsed.version || parsed.version < CURRENT_VERSION) {
+        data = withSeedDefaults;
         localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
       }
 

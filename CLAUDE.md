@@ -10,8 +10,10 @@
 
 - `src/pages/` — 5 个页面：Home（仪表盘）、GearLibrary（装备库）、TripList（行程列表）、TripForm（表单）、TripDetail（详情）
 - `src/components/Layout.tsx` — 桌面 w-64 侧边栏 + 移动端底部导航
-- `src/store/useStore.tsx` — Context 状态管理，localStorage 持久化（key: `ontheway_data`）
-- `src/store/seedData.ts` — 种子数据：22 件装备 + 千八线示例行程
+- `src/store/StoreProvider.tsx` — Context 状态管理、localStorage 持久化和数据迁移（key: `ontheway_data`）
+- `src/store/storeContext.ts` — Store Context 定义
+- `src/store/useStore.ts` — Store hook
+- `src/store/seedData.ts` — 种子数据：24 件装备 + 千八线示例行程
 - `src/types/index.ts` — 类型定义（GearItem, Trip, TripGear, GearCategory 等）
 - `src/style.css` — Tailwind v4 入口 + `@theme` 自定义色板 + 打印样式
 - `agent/` — 行程规划对话记录目录
@@ -40,6 +42,21 @@ addGear / updateGear / deleteGear — 装备 CRUD
 addTrip / updateTrip / deleteTrip — 行程 CRUD
 togglePacked — 打包勾选
 addGearToTrip / removeGearFromTrip — 行程装备管理
+
+## 当前数据迁移规则
+
+- `CURRENT_VERSION = 6`，本地数据 key 为 `ontheway_data`。
+- 启动时按装备名称匹配 `seedGear`，只补齐缺失的 `brand`、`weight`、`notes`，不会覆盖用户已有值。
+- 启动时会追加本地不存在的新 seed 装备，例如 `3L水袋（满水）`。
+- `3L水袋（满水）` 当前重量为 `3000g`，表示 3L 水重量；水袋空包自重未计入。
+- 云岭睡袋当前重量 `1300g`，备注为按云岭 Primaloft 相关款估算。
+
+## Agent 协作注意
+
+- 本项目由 Codex 与 Claude agent 协作维护；接手前先看 `README.md`、`ITERATION.md` 和最近 git diff。
+- 不要直接清空或覆盖用户 localStorage 数据；seed 数据调整必须兼容已有装备和行程。
+- 行程计划当前不再用 iframe，使用 sanitizer 后页面内渲染，保留示例 HTML 视觉样式。
+- 提交前必须跑 `npm run lint` 和 `npm run build`。
 
 ## 常用操作
 

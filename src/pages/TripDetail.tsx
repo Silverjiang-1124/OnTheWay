@@ -115,7 +115,6 @@ function TripDetailContent({
   const packedPercent = allStats.count ? Math.round((allStats.packedCount / allStats.count) * 100) : 0;
   const riskEntries = riskInfoEntries(trip);
   const sanitizedPlan = trip.plan ? sanitizeHtml(trip.plan) : '';
-  const planDoc = sanitizedPlan ? wrapPlanHtml(sanitizedPlan) : '';
 
   const handleSaveJournal = () => {
     updateTrip(trip.id, { journal: journalText || undefined, rating: rating || undefined });
@@ -281,12 +280,12 @@ function TripDetailContent({
               {showPlan ? '收起' : '展开'}
             </button>
           </div>
-          <div className={`rounded-3xl border border-slate-100 overflow-hidden print:hidden ${showPlan ? '' : 'hidden'}`}>
-            <iframe className="w-full h-[520px] border-none block" srcDoc={planDoc} sandbox="" title="行程计划" />
+          <div className={`trip-plan-shell rounded-3xl border border-slate-100 overflow-hidden print:hidden ${showPlan ? '' : 'hidden'}`}>
+            <div className="trip-plan-content" dangerouslySetInnerHTML={{ __html: sanitizedPlan }} />
           </div>
           <div className="hidden print:block mt-8">
             <h2 className="font-extrabold text-lg border-b-2 border-accent-light pb-2 mb-4">📋 行程计划</h2>
-            <div className="text-sm leading-relaxed" dangerouslySetInnerHTML={{ __html: sanitizedPlan }} />
+            <div className="trip-plan-content text-sm leading-relaxed" dangerouslySetInnerHTML={{ __html: sanitizedPlan }} />
           </div>
         </section>
       )}
@@ -727,11 +726,4 @@ function sanitizeHtml(html: string): string {
     }
   });
   return doc.body.innerHTML;
-}
-
-function wrapPlanHtml(fragment: string): string {
-  return `<!DOCTYPE html>
-<html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<style>body{margin:0;background:#f7f5f0;font-family:-apple-system,'PingFang SC','Noto Sans SC','Microsoft YaHei',sans-serif;line-height:1.6;color:#2c2c2c;}</style>
-</head><body style="padding:16px;">${fragment}</body></html>`;
 }
