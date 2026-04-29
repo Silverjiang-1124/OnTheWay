@@ -56,6 +56,8 @@ addGearToTrip / removeGearFromTrip — 行程装备管理
 - 本项目由 Codex 与 Claude agent 协作维护；接手前先看 `README.md`、`ITERATION.md` 和最近 git diff。
 - 不要直接清空或覆盖用户 localStorage 数据；seed 数据调整必须兼容已有装备和行程。
 - 行程计划当前不再用 iframe，使用 sanitizer 后页面内渲染，保留示例 HTML 视觉样式。
+- 生成或改写行程计划时，不能只输出纯文本；请输出可直接写入 `Trip.plan` 的 HTML 片段，并优先使用 `.otw-plan` 计划样式类：`.otw-plan-hero`、`.otw-plan-grid`、`.otw-plan-stat`、`.otw-plan-card`、`.otw-plan-timeline`、`.otw-plan-alert`。
+- 计划内容需要面向分享和打印/PDF：标题、日期、地点、关键参数、按天时间线、风险/补给/交通信息都应结构化展示。
 - 提交前必须跑 `npm run lint` 和 `npm run build`。
 
 ## 常用操作

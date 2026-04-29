@@ -71,6 +71,7 @@ OnTheWay/
 
 - 本项目当前由 Codex 与 Claude agent 协作维护，变更前先查看 `CLAUDE.md` 和 `ITERATION.md`。
 - 涉及装备 seed 的改动需要同时考虑已有浏览器 `localStorage` 数据；新增装备或补字段应通过 StoreProvider 的启动同步逻辑兼容老数据。
+- 生成行程计划时不要只写纯文本；应输出可直接保存到 `Trip.plan` 的 HTML 片段，并优先使用 `.otw-plan`、`.otw-plan-hero`、`.otw-plan-grid`、`.otw-plan-card`、`.otw-plan-timeline`、`.otw-plan-alert` 等样式类，保证页面内渲染和分享/PDF 可读性。
 - 提交前运行 `npm run lint` 和 `npm run build`。
 
 ## 设计规范

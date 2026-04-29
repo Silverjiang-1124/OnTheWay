@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate, Link, useParams } from 'react-router-dom';
 import { useStore } from '../store/useStore';
 import { GEAR_CATEGORIES, gearCategoryLabel, type GearCategory, type Trip, type TripRiskInfo } from '../types';
-import { ArrowLeft, Route, AlertCircle, ShieldAlert } from 'lucide-react';
+import { ArrowLeft, Route, AlertCircle, ShieldAlert, WandSparkles } from 'lucide-react';
 
 interface TripFormFieldsProps {
   existingTrip?: Trip;
@@ -82,6 +82,66 @@ function TripFormFields({ existingTrip, gearItems, addTrip, updateTrip }: TripFo
       notes: notes.trim() || undefined,
     };
     return Object.values(info).some(Boolean) ? info : undefined;
+  };
+
+  const applyStyledPlanTemplate = () => {
+    if (plan.trim() && !window.confirm('当前行程计划已有内容，是否用美化模板覆盖？')) return;
+    const planTitle = escapeHtml(title.trim() || '行程标题');
+    const place = escapeHtml(location.trim() || '目的地');
+    const start = startDate || '出发日期';
+    const end = endDate || '结束日期';
+    const routeText = escapeHtml(route.trim() || '起点 → 关键节点 → 终点');
+    const distanceText = distance ? `${distance}km` : '待补充';
+    const elevationText = elevation ? `${elevation}m` : '待补充';
+    const memberText = escapeHtml(members.trim() || '队友待补充');
+    const supplyText = escapeHtml(supply.trim() || '补给、水源和撤退点待补充');
+    const weatherText = escapeHtml(weather.trim() || '出发前 24 小时复查天气、风力、降雨和低温风险');
+
+    setPlan(`<div class="otw-plan">
+  <section class="otw-plan-hero">
+    <span class="otw-plan-kicker">Outdoor Itinerary</span>
+    <h1>${planTitle}</h1>
+    <p>${place} · ${start} ~ ${end}</p>
+  </section>
+
+  <section class="otw-plan-grid">
+    <div class="otw-plan-stat"><strong>${distanceText}</strong><span>总里程</span></div>
+    <div class="otw-plan-stat"><strong>${elevationText}</strong><span>累计爬升</span></div>
+    <div class="otw-plan-stat"><strong>${memberText}</strong><span>同行人员</span></div>
+  </section>
+
+  <section class="otw-plan-card">
+    <h2>路线概览</h2>
+    <p>${routeText}</p>
+  </section>
+
+  <section class="otw-plan-timeline">
+    <article>
+      <time>D0 / 集合</time>
+      <h3>抵达起点与营地准备</h3>
+      <p>确认交通、停车、补水和首晚扎营位置；睡前复核第二天装备和天气。</p>
+    </article>
+    <article>
+      <time>D1 / 主线推进</time>
+      <h3>核心爬升与主要景观点</h3>
+      <p>按实际轨迹拆分关键节点、午餐点、水源和预估到达时间。</p>
+    </article>
+    <article>
+      <time>D2 / 返程</time>
+      <h3>下撤、补给与返程衔接</h3>
+      <p>明确下撤路线、包车或公共交通联系人，以及最晚下山时间。</p>
+    </article>
+  </section>
+
+  <section class="otw-plan-alert">
+    <h2>出发前确认</h2>
+    <ul>
+      <li>${weatherText}</li>
+      <li>${supplyText}</li>
+      <li>离线轨迹、应急联系人、头灯和保暖层必须复核。</li>
+    </ul>
+  </section>
+</div>`);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -211,11 +271,21 @@ function TripFormFields({ existingTrip, gearItems, addTrip, updateTrip }: TripFo
         </section>
 
         <div>
-          <label className="text-[10px] font-black tracking-wider uppercase text-slate-500 mb-1.5 block">行程计划</label>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-1.5">
+            <label className="text-[10px] font-black tracking-wider uppercase text-slate-500 block">行程计划</label>
+            <button
+              type="button"
+              onClick={applyStyledPlanTemplate}
+              className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 text-white text-xs font-semibold hover:bg-black transition-all active:scale-95 cursor-pointer"
+            >
+              <WandSparkles size={14} />
+              套用分享样式模板
+            </button>
+          </div>
           <textarea rows={8} value={plan} onChange={e => setPlan(e.target.value)}
-            placeholder="输入行程计划片段，支持当前示例使用的 HTML 样式；留空则不显示"
+            placeholder="建议使用带 .otw-plan 样式类的 HTML 片段，页面会直接渲染为分享友好的卡片式计划；留空则不显示"
             className="w-full px-4 py-3 border border-slate-100 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent transition-all bg-surface resize-y min-h-[120px] font-mono" />
-          <p className="text-xs text-slate-400 mt-2">展示时直接渲染在页面内，并自动移除脚本、事件属性和危险链接；后续可迁移为 Markdown/结构化日程。</p>
+          <p className="text-xs text-slate-400 mt-2">展示时直接渲染在页面内，并自动移除脚本、事件属性和危险链接。后续让 agent 生成计划时，应输出带前端样式的 HTML 片段，不要只给纯文本。</p>
         </div>
 
         {gearItems.length > 0 && (
@@ -306,4 +376,13 @@ function RiskInput({ label, value, onChange, placeholder, multiLine }: {
       )}
     </div>
   );
+}
+
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }

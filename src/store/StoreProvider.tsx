@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { ASSIGNEES, genId, type Assignee, type BackupData, type GearItem, type Trip, type TripGear } from '../types';
-import { createSeedTrip, seedGear } from './seedData';
+import { createQianbaPlanHtml, createSeedTrip, seedGear } from './seedData';
 import { StoreContext } from './storeContext';
 
 const STORAGE_KEY = 'ontheway_data';
@@ -102,6 +102,19 @@ function applySeedGearDefaults(data: StoreData): StoreData {
   };
 }
 
+function applySeedTripDefaults(data: StoreData): StoreData {
+  return {
+    ...data,
+    version: CURRENT_VERSION,
+    trips: data.trips.map(trip => {
+      const isQianbaTrip = trip.title.includes('千八线') && trip.location.includes('丽水');
+      const hasOldSeedPlan = trip.plan?.includes('2026.04.28 整理') && !trip.plan.includes('otw-plan');
+      if (!isQianbaTrip || !hasOldSeedPlan) return trip;
+      return { ...trip, plan: createQianbaPlanHtml() };
+    }),
+  };
+}
+
 function loadData(): StoreData {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -110,7 +123,7 @@ function loadData(): StoreData {
       let data = normalizeData(parsed);
       if (!data) throw new Error('normalize failed');
 
-      const withSeedDefaults = applySeedGearDefaults(data);
+      const withSeedDefaults = applySeedTripDefaults(applySeedGearDefaults(data));
       if (JSON.stringify(withSeedDefaults) !== JSON.stringify(data) || !parsed.version || parsed.version < CURRENT_VERSION) {
         data = withSeedDefaults;
         localStorage.setItem(STORAGE_KEY, JSON.stringify(data));

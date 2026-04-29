@@ -28,107 +28,68 @@ export const seedGear: GearItem[] = [
   { id: genId(), name: '羊毛帽', category: 'clothing', quantity: 1, weight: 45, createdAt: new Date().toISOString() },
 ];
 
-export function createSeedTrip(): Trip {
-  const planHtml = `<div class="container" style="max-width:780px;margin:0 auto;font-family:-apple-system,'PingFang SC','Noto Sans SC','Microsoft YaHei',sans-serif;color:#2c2c2c;line-height:1.7;">
-  <div style="text-align:center;padding:32px 20px 24px;background:linear-gradient(135deg,#2d5a27,#1a3a16);color:#fff;border-radius:14px;margin-bottom:16px;">
-    <h1 style="font-size:22px;letter-spacing:2px;margin:0;">🏔️ 千八线·五一重装徒步</h1>
-    <p style="font-size:13px;opacity:.85;margin-top:4px;">粗坑→凤阳湖→南溪村 → 包车返程 · 3人</p>
-    <div style="display:flex;justify-content:center;gap:16px;margin-top:10px;font-size:12px;opacity:.75;flex-wrap:wrap;">
-      <span>📅 04.30 晚 → 05.02 夜返</span>
-      <span>📍 丽水·龙泉</span>
-      <span>👥 3人</span>
-    </div>
-  </div>
-  <div style="background:#fff;border-radius:12px;padding:20px;margin-bottom:14px;box-shadow:0 1px 4px rgba(0,0,0,.06);">
-    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;">
-      <div style="flex:1;min-width:80px;text-align:center;padding:8px;background:#e8f0e6;border-radius:8px;">
-        <div style="font-size:20px;font-weight:700;color:#2d5a27;">~31km</div>
-        <div style="font-size:12px;color:#666;">总里程</div>
-      </div>
-      <div style="flex:1;min-width:80px;text-align:center;padding:8px;background:#e8f0e6;border-radius:8px;">
-        <div style="font-size:20px;font-weight:700;color:#2d5a27;">~3,000m</div>
-        <div style="font-size:12px;color:#666;">总爬升</div>
-      </div>
-      <div style="flex:1;min-width:80px;text-align:center;padding:8px;background:#e8f0e6;border-radius:8px;">
-        <div style="font-size:20px;font-weight:700;color:#2d5a27;">11座</div>
-        <div style="font-size:12px;color:#666;">1,800m+山峰</div>
-      </div>
-    </div>
-    <div style="font-size:17px;font-weight:700;margin-bottom:10px;">🚗 D0 · 4/30（四）温州→粗坑 <span style="display:inline-block;font-size:11px;padding:1px 8px;border-radius:10px;background:#fef0e0;color:#a86400;font-weight:600;margin-left:4px;">自驾扎营</span></div>
-    <div style="font-size:14px;">
-      <div style="display:grid;grid-template-columns:auto 1fr;gap:3px 12px;">
-        <span style="color:#666;">路线</span><span style="font-weight:500;">温州→G1513温丽高速→G25长深高速→塔石互通下→龙泉市区→官浦垟村粗坑</span>
-        <span style="color:#666;">距离</span><span style="font-weight:500;">~236km（高速215km + 山区21km）</span>
-        <span style="color:#666;">用时</span><span style="font-weight:500;"><strong>19:00→~22:30</strong>（约3.5h）</span>
-        <span style="color:#666;">过路费</span><span style="font-weight:500;">~100元</span>
-        <span style="color:#666;">停车</span><span style="font-weight:500;">粗坑村口停车场（凤阳山缆车下站）</span>
-        <span style="color:#666;">扎营</span><span style="font-weight:500;">粗坑村附近平地扎帐</span>
-      </div>
-    </div>
-    <div style="background:#fff8e6;border-left:4px solid #e6a817;padding:8px 12px;border-radius:0 6px 6px 0;font-size:13px;margin-top:10px;">
-      ⚠️ 最后21km山区弯道，夜间减速慢行。建议温州加满油，中途服务区吃晚饭。
-    </div>
-  </div>
-  <div style="background:#fff;border-radius:12px;padding:20px;margin-bottom:14px;box-shadow:0 1px 4px rgba(0,0,0,.06);">
-    <div style="font-size:17px;font-weight:700;margin-bottom:10px;">🥾 D1 · 5/1（五）粗坑→凤阳湖 <span style="display:inline-block;font-size:11px;padding:1px 8px;border-radius:10px;background:#e8f0e6;color:#2d5a27;font-weight:600;margin-left:4px;">硬仗日</span></div>
-    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;">
-      <div style="flex:1;min-width:70px;text-align:center;padding:6px;background:#e8f0e6;border-radius:8px;"><div style="font-size:18px;font-weight:700;color:#2d5a27;">~15km</div><div style="font-size:11px;color:#666;">里程</div></div>
-      <div style="flex:1;min-width:70px;text-align:center;padding:6px;background:#e8f0e6;border-radius:8px;"><div style="font-size:18px;font-weight:700;color:#2d5a27;">~2,000m</div><div style="font-size:11px;color:#666;">爬升</div></div>
-      <div style="flex:1;min-width:70px;text-align:center;padding:6px;background:#e8f0e6;border-radius:8px;"><div style="font-size:18px;font-weight:700;color:#2d5a27;">~9-10h</div><div style="font-size:11px;color:#666;">用时</div></div>
-    </div>
-    <div style="font-size:13.5px;">
-      <div style="display:flex;gap:8px;padding:4px 0;border-bottom:1px solid #f3f3f3;"><span style="width:55px;flex-shrink:0;font-weight:600;color:#2d5a27;">06:00</span><span>起床收帐、早餐</span></div>
-      <div style="display:flex;gap:8px;padding:4px 0;border-bottom:1px solid #f3f3f3;"><span style="width:55px;flex-shrink:0;font-weight:600;color:#2d5a27;">07:00</span><span>粗坑出发 ↑</span></div>
-      <div style="display:flex;gap:8px;padding:4px 0;border-bottom:1px solid #f3f3f3;"><span style="width:55px;flex-shrink:0;font-weight:600;color:#2d5a27;">~10:00</span><span>凤阳山南峰（1848m）</span></div>
-      <div style="display:flex;gap:8px;padding:4px 0;border-bottom:1px solid #f3f3f3;"><span style="width:55px;flex-shrink:0;font-weight:600;color:#2d5a27;">~11:30</span><span>🌟 绿野山庄（唯一补给点）</span></div>
-      <div style="display:flex;gap:8px;padding:4px 0;border-bottom:1px solid #f3f3f3;"><span style="width:55px;flex-shrink:0;font-weight:600;color:#2d5a27;">~13:00</span><span>🏁 <strong>黄茅尖 1929m</strong>（浙江之巅）</span></div>
-      <div style="display:flex;gap:8px;padding:4px 0;"><span style="width:55px;flex-shrink:0;font-weight:600;color:#2d5a27;">~16:00</span><span>🏕️ <strong>凤阳湖营地</strong>（扎营、做饭）</span></div>
-    </div>
-    <div style="background:#e8f0e6;border-left:4px solid #2d5a27;padding:8px 12px;border-radius:0 6px 6px 0;font-size:13px;margin-top:10px;">
-      📍 凤阳湖边扎营，有卫生间、山泉水（需过滤）。粗坑带足水→绿野山庄可补→凤阳湖有泉水。
-    </div>
-  </div>
-  <div style="background:#fff;border-radius:12px;padding:20px;margin-bottom:14px;box-shadow:0 1px 4px rgba(0,0,0,.06);">
-    <div style="font-size:17px;font-weight:700;margin-bottom:10px;">🥾 D2 · 5/2（六）凤阳湖→南溪村→包车回温州 <span style="display:inline-block;font-size:11px;padding:1px 8px;border-radius:10px;background:#fef0e0;color:#a86400;font-weight:600;margin-left:4px;">当夜返程</span></div>
-    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;">
-      <div style="flex:1;min-width:70px;text-align:center;padding:6px;background:#e8f0e6;border-radius:8px;"><div style="font-size:18px;font-weight:700;color:#2d5a27;">~16km</div><div style="font-size:11px;color:#666;">徒步</div></div>
-      <div style="flex:1;min-width:70px;text-align:center;padding:6px;background:#e8f0e6;border-radius:8px;"><div style="font-size:18px;font-weight:700;color:#2d5a27;">~1,000m</div><div style="font-size:11px;color:#666;">爬升</div></div>
-      <div style="flex:1;min-width:70px;text-align:center;padding:6px;background:#e8f0e6;border-radius:8px;"><div style="font-size:18px;font-weight:700;color:#2d5a27;">~8-9h</div><div style="font-size:11px;color:#666;">徒步用时</div></div>
-    </div>
-    <div style="font-size:13.5px;">
-      <div style="display:flex;gap:8px;padding:4px 0;border-bottom:1px solid #f3f3f3;"><span style="width:55px;flex-shrink:0;font-weight:600;color:#2d5a27;">07:00</span><span>起床收帐、灌满全天用水</span></div>
-      <div style="display:flex;gap:8px;padding:4px 0;border-bottom:1px solid #f3f3f3;"><span style="width:55px;flex-shrink:0;font-weight:600;color:#2d5a27;">08:30</span><span>凤阳湖出发 → 烧香岩</span></div>
-      <div style="display:flex;gap:8px;padding:4px 0;border-bottom:1px solid #f3f3f3;"><span style="width:55px;flex-shrink:0;font-weight:600;color:#2d5a27;">~10:00</span><span>烧香岩（1832m）山脊线</span></div>
-      <div style="display:flex;gap:8px;padding:4px 0;border-bottom:1px solid #f3f3f3;"><span style="width:55px;flex-shrink:0;font-weight:600;color:#2d5a27;">~11:30</span><span>天堂山→大天堂（1822m）</span></div>
-      <div style="display:flex;gap:8px;padding:4px 0;border-bottom:1px solid #f3f3f3;"><span style="width:55px;flex-shrink:0;font-weight:600;color:#2d5a27;">~13:00</span><span>连续下坡（戴护膝）</span></div>
-      <div style="display:flex;gap:8px;padding:4px 0;border-bottom:1px solid #f3f3f3;"><span style="width:55px;flex-shrink:0;font-weight:600;color:#2d5a27;">~15:30</span><span>🏁 到达南溪村，休息吃饭</span></div>
-      <div style="display:flex;gap:8px;padding:4px 0;border-bottom:1px solid #f3f3f3;"><span style="width:55px;flex-shrink:0;font-weight:600;color:#2d5a27;">~16:30</span><span>🚐 <strong>包车回粗坑</strong>（1.5-2h）</span></div>
-      <div style="display:flex;gap:8px;padding:4px 0;border-bottom:1px solid #f3f3f3;"><span style="width:55px;flex-shrink:0;font-weight:600;color:#2d5a27;">~18:30</span><span>🚗 到粗坑取车，开回温州</span></div>
-      <div style="display:flex;gap:8px;padding:4px 0;"><span style="width:55px;flex-shrink:0;font-weight:600;color:#2d5a27;">~22:00</span><span>🏠 到温州</span></div>
-    </div>
-    <div style="background:#e8f0e6;border-left:4px solid #2d5a27;padding:8px 12px;border-radius:0 6px 6px 0;font-size:13px;margin-top:10px;">
-      💧 凤阳湖出发每人灌满≥3L，全天无补给，南溪村有泉水。<br>
-      🚐 <strong>包车：大兵 18857823017（微信531017）</strong> 350元/车。提前一两天联系。
-    </div>
-  </div>
-  <div style="background:#fff;border-radius:12px;padding:20px;box-shadow:0 1px 4px rgba(0,0,0,.06);">
-    <div style="font-size:17px;font-weight:700;margin-bottom:10px;">🌤 天气预报 <span style="display:inline-block;font-size:11px;padding:1px 8px;border-radius:10px;background:#e3edf7;color:#1a5276;font-weight:600;margin-left:4px;">龙泉山区·4/28查询</span></div>
-    <p style="font-size:13px;color:#666;margin-bottom:8px;">不同预报源存在分歧，出发前再确认。</p>
-    <table style="width:100%;border-collapse:collapse;font-size:13px;">
-      <thead><tr><th style="text-align:left;padding:6px 8px;background:#f0ede6;font-size:12px;">日期</th><th style="text-align:left;padding:6px 8px;background:#f0ede6;font-size:12px;">中国天气网</th><th style="text-align:left;padding:6px 8px;background:#f0ede6;font-size:12px;">yzqxj</th><th style="text-align:left;padding:6px 8px;background:#f0ede6;font-size:12px;">气温</th></tr></thead>
-      <tbody>
-        <tr><td style="padding:5px 8px;border-bottom:1px solid #f0f0f0;"><strong>4/30晚</strong></td><td style="padding:5px 8px;border-bottom:1px solid #f0f0f0;">—</td><td style="padding:5px 8px;border-bottom:1px solid #f0f0f0;">晴</td><td style="padding:5px 8px;border-bottom:1px solid #f0f0f0;">~10-15°C</td></tr>
-        <tr><td style="padding:5px 8px;border-bottom:1px solid #f0f0f0;"><strong>5/1</strong></td><td style="padding:5px 8px;border-bottom:1px solid #f0f0f0;">阴 12~22°C</td><td style="padding:5px 8px;border-bottom:1px solid #f0f0f0;">晴/多云 11~28°C</td><td style="padding:5px 8px;border-bottom:1px solid #f0f0f0;">分歧较大</td></tr>
-        <tr><td style="padding:5px 8px;"><strong>5/2</strong></td><td style="padding:5px 8px;">阴 12~20°C</td><td style="padding:5px 8px;">多云转小雨 15~29°C</td><td style="padding:5px 8px;">不确定</td></tr>
-      </tbody>
-    </table>
-    <div style="background:#fff8e6;border-left:4px solid #e6a817;padding:8px 12px;border-radius:0 6px 6px 0;font-size:13px;margin-top:10px;">
-      出发前刷「中国天气网」龙泉站或彩云天气。冲锋衣+雨衣都带，山里小气候说不准。
-    </div>
-  </div>
-  <div style="text-align:center;padding:16px 0 8px;font-size:11px;color:#666;">2026.04.28 整理</div>
-</div>`;
+export function createQianbaPlanHtml(): string {
+  return `<div class="otw-plan">
+  <section class="otw-plan-hero">
+    <span class="otw-plan-kicker">Lishui Longquan · Heavy Trek</span>
+    <h1>千八线 · 五一重装徒步</h1>
+    <p>粗坑 → 凤阳湖 → 南溪村 · 2026.04.30 晚 ~ 05.02 夜返 · 3人</p>
+  </section>
 
+  <section class="otw-plan-grid">
+    <div class="otw-plan-stat"><strong>31km</strong><span>总里程</span></div>
+    <div class="otw-plan-stat"><strong>3000m</strong><span>累计爬升</span></div>
+    <div class="otw-plan-stat"><strong>11座</strong><span>1800m+ 山峰</span></div>
+  </section>
+
+  <section class="otw-plan-card">
+    <h2>路线概览</h2>
+    <p>粗坑 → 凤阳山南峰 → 绿野山庄 → 黄茅尖 1929m → 凤阳湖营地 → 烧香岩 → 天堂山 → 大天堂 → 南溪村。</p>
+    <p>整体是两天重装穿越，D1 重点是高强度爬升和抵达凤阳湖扎营，D2 重点是长距离山脊推进、连续下坡和包车返程衔接。</p>
+  </section>
+
+  <section class="otw-plan-timeline">
+    <article>
+      <time>D0 / 04.30 周四 · 温州 → 粗坑</time>
+      <h3>夜间自驾到起点，粗坑村附近扎营</h3>
+      <p>19:00 温州出发，经 G1513 温丽高速、G25 长深高速、塔石互通下，约 22:30 到粗坑村口停车场。全程约 236km，过路费约 100 元。</p>
+      <p>最后 21km 为山区弯道，夜间减速慢行；建议温州加满油，中途服务区解决晚饭。到达后只做轻量扎营和第二天装备复核。</p>
+    </article>
+
+    <article>
+      <time>D1 / 05.01 周五 · 粗坑 → 凤阳湖</time>
+      <h3>主爬升日：约 15km / 2000m+ / 9-10h</h3>
+      <p>06:00 起床收帐和早餐，07:00 从粗坑出发。约 10:00 到凤阳山南峰，约 11:30 到绿野山庄补给，约 13:00 登顶黄茅尖 1929m。</p>
+      <p>下午继续推进至凤阳湖，目标 16:00 左右到营地扎营做饭。凤阳湖附近有卫生间和山泉水，但仍建议过滤后饮用。</p>
+    </article>
+
+    <article>
+      <time>D2 / 05.02 周六 · 凤阳湖 → 南溪村 → 温州</time>
+      <h3>山脊推进与返程日：约 16km / 1000m+ / 8-9h</h3>
+      <p>07:00 起床收帐并灌满全天用水，08:30 从凤阳湖出发，依次经过烧香岩、天堂山、大天堂，之后进入连续下坡段。</p>
+      <p>15:30 左右到南溪村休整，16:30 包车回粗坑取车，18:30 左右开车返温州，预计 22:00 到家。下坡段建议护膝和登山杖都启用。</p>
+    </article>
+  </section>
+
+  <section class="otw-plan-grid">
+    <div class="otw-plan-stat"><strong>3L</strong><span>D2 每人起步水量</span></div>
+    <div class="otw-plan-stat"><strong>350元</strong><span>南溪村 → 粗坑包车</span></div>
+    <div class="otw-plan-stat"><strong>22:00</strong><span>预计回到温州</span></div>
+  </section>
+
+  <section class="otw-plan-alert">
+    <h2>出发前确认</h2>
+    <ul>
+      <li>水源策略：粗坑带足起步水，绿野山庄可补，凤阳湖可取山泉；D2 从凤阳湖出发每人灌满 3L。</li>
+      <li>交通衔接：南溪村包车回粗坑，联系人“大兵 18857823017”，预算 350 元/车，提前一到两天确认。</li>
+      <li>风险控制：出发前复查龙泉山区天气；冲锋衣、雨衣、头灯、保暖层、离线轨迹和户外保险必须复核。</li>
+      <li>装备重点：重装爬升强度高，打包时优先控制非必要物品，水、路餐、保暖和急救不要压缩。</li>
+    </ul>
+  </section>
+</div>`;
+}
+
+export function createSeedTrip(): Trip {
   return {
     id: genId(),
     title: '千八线·五一重装徒步',
@@ -136,7 +97,7 @@ export function createSeedTrip(): Trip {
     startDate: '2026-04-30',
     endDate: '2026-05-02',
     route: '粗坑→凤阳山→黄茅尖(1929m)→凤阳湖→烧香岩→天堂山→大天堂→南溪村',
-    plan: planHtml,
+    plan: createQianbaPlanHtml(),
     trackUrl: 'https://www.2bulu.com/track/t-JSONPxWwVJzp%25253D.htm',
     distance: 31,
     elevation: 3000,

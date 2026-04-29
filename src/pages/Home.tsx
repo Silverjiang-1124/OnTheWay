@@ -1,7 +1,7 @@
 import { useStore } from '../store/useStore';
 import { gearCategoryLabel, type GearCategory } from '../types';
 import { Link } from 'react-router-dom';
-import { Package, CalendarCheck, CheckCircle2, MapPin, Calendar, Mountain, Download, Upload } from 'lucide-react';
+import { Package, CalendarCheck, CheckCircle2, MapPin, Calendar, Mountain, Download, Upload, ChevronRight, Layers, ArrowRight } from 'lucide-react';
 
 
 export default function Home() {
@@ -45,38 +45,104 @@ export default function Home() {
 
   return (
     <div className="page">
+      <header className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-8">
+        <div>
+          <p className="text-xs font-black tracking-[0.24em] uppercase text-emerald-600 mb-2">Outdoor Command Center</p>
+          <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900">发现新征程</h1>
+          <p className="text-slate-500 mt-2">欢迎回来，先确认装备和行程，再安心出发。</p>
+        </div>
+        <Link
+          to="/trips/new"
+          className="inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-3 rounded-2xl transition-all shadow-lg shadow-emerald-200 active:scale-95 font-semibold"
+        >
+          新建行程
+          <ArrowRight size={18} />
+        </Link>
+      </header>
+
       {/* Stats row */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 my-6">
-        <Link to="/gear" className="bg-surface rounded-3xl border border-slate-100 shadow-sm hover:shadow-lg transition-all p-6 text-center active:scale-[0.98] block">
-          <Package size={32} className="text-accent mx-auto mb-2" />
-          <span className="text-3xl font-extrabold text-accent block">{gearItems.length}</span>
-          <span className="text-sm text-slate-500 mt-1 block">装备总数</span>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 my-6">
+        <Link to="/gear" className="bg-white rounded-3xl border border-slate-100 shadow-sm hover:shadow-md transition-all p-6 active:scale-[0.98] flex items-center gap-5">
+          <div className="bg-emerald-50 text-emerald-600 p-4 rounded-2xl">
+            <Package size={28} />
+          </div>
+          <span>
+            <span className="text-sm text-slate-500 font-medium block">装备总数</span>
+            <span className="text-3xl font-extrabold text-slate-900 block">{gearItems.length}</span>
+          </span>
         </Link>
-        <Link to="/trips" className="bg-surface rounded-3xl border border-slate-100 shadow-sm hover:shadow-lg transition-all p-6 text-center active:scale-[0.98] block">
-          <CalendarCheck size={32} className="text-amber mx-auto mb-2" />
-          <span className="text-3xl font-extrabold text-amber block">{upcoming.length}</span>
-          <span className="text-sm text-slate-500 mt-1 block">待出发</span>
+        <Link to="/trips" className="bg-white rounded-3xl border border-slate-100 shadow-sm hover:shadow-md transition-all p-6 active:scale-[0.98] flex items-center gap-5">
+          <div className="bg-amber-50 text-amber-600 p-4 rounded-2xl">
+            <CalendarCheck size={28} />
+          </div>
+          <span>
+            <span className="text-sm text-slate-500 font-medium block">待出发</span>
+            <span className="text-3xl font-extrabold text-slate-900 block">{upcoming.length}</span>
+          </span>
         </Link>
-        <Link to="/trips" className="bg-surface rounded-3xl border border-slate-100 shadow-sm hover:shadow-lg transition-all p-6 text-center active:scale-[0.98] block">
-          <CheckCircle2 size={32} className="text-blue mx-auto mb-2" />
-          <span className="text-3xl font-extrabold text-blue block">{completed.length}</span>
-          <span className="text-sm text-slate-500 mt-1 block">已完成</span>
+        <Link to="/trips" className="bg-white rounded-3xl border border-slate-100 shadow-sm hover:shadow-md transition-all p-6 active:scale-[0.98] flex items-center gap-5">
+          <div className="bg-blue-50 text-blue-600 p-4 rounded-2xl">
+            <CheckCircle2 size={28} />
+          </div>
+          <span>
+            <span className="text-sm text-slate-500 font-medium block">已完成</span>
+            <span className="text-3xl font-extrabold text-slate-900 block">{completed.length}</span>
+          </span>
         </Link>
       </div>
 
       {/* Upcoming trips */}
       {upcoming.length > 0 && (
         <section className="mt-8">
-          <h2 className="font-extrabold text-lg flex items-center gap-2 pb-2 border-b-2 border-accent-light mb-4">
-            即将出发
-          </h2>
+          <div className="flex items-center justify-between mb-5">
+            <h2 className="font-extrabold text-xl flex items-center gap-2">
+              <CalendarCheck className="text-emerald-600" size={20} />
+              即将出发
+            </h2>
+            <Link to="/trips" className="text-emerald-600 text-sm font-semibold inline-flex items-center gap-1 hover:underline">
+              查看全部行程 <ChevronRight size={16} />
+            </Link>
+          </div>
           {upcoming.map(trip => (
             <Link to={`/trips/${trip.id}`} key={trip.id} className="block mb-3">
-              <div className="bg-surface rounded-3xl border border-slate-100 shadow-sm hover:shadow-lg transition-all p-5 active:scale-[0.99]">
-                <div className="font-extrabold text-accent">{trip.title}</div>
-                <div className="flex gap-4 text-sm text-slate-500 mt-1.5">
-                  <span className="inline-flex items-center gap-1.5"><MapPin size={14} />{trip.location}</span>
-                  <span className="inline-flex items-center gap-1.5"><Calendar size={14} />{trip.startDate} ~ {trip.endDate}</span>
+              <div className="bg-white rounded-3xl border border-slate-100 shadow-sm hover:shadow-lg transition-all p-6 active:scale-[0.99] relative overflow-hidden group">
+                <div className="absolute top-0 right-0 w-36 h-36 bg-emerald-50 rounded-full -mr-16 -mt-16 group-hover:scale-110 transition-transform duration-500" />
+                <div className="relative z-10">
+                  <div className="flex flex-wrap justify-between items-start gap-4">
+                    <div>
+                      <h3 className="text-2xl font-extrabold text-slate-800 mb-2">{trip.title}</h3>
+                      <div className="flex flex-wrap gap-4 text-slate-500 text-sm">
+                        <span className="inline-flex items-center gap-1.5"><MapPin size={16} className="text-emerald-500" />{trip.location}</span>
+                        <span className="inline-flex items-center gap-1.5"><Calendar size={16} className="text-emerald-500" />{trip.startDate} ~ {trip.endDate}</span>
+                        {(trip.distance || trip.elevation) && (
+                          <span className="inline-flex items-center gap-1.5">
+                            <Layers size={16} className="text-emerald-500" />
+                            {trip.distance ? `${trip.distance}km` : '-'} / {trip.elevation ? `${trip.elevation}m` : '-'}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <span className="bg-emerald-50 text-emerald-700 px-4 py-1.5 rounded-full text-xs font-bold border border-emerald-100">
+                      进行中
+                    </span>
+                  </div>
+                  <div className="mt-8 flex items-center gap-5">
+                    <div className="flex-1">
+                      <div className="flex justify-between text-xs font-bold mb-2">
+                        <span className="text-slate-400 uppercase tracking-wider">装备打包进度</span>
+                        <span className="text-emerald-600">{trip.gearList.filter(g => g.packed).length}/{trip.gearList.length}</span>
+                      </div>
+                      <div className="h-3 bg-slate-100 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-emerald-500 rounded-full transition-all"
+                          style={{ width: trip.gearList.length ? `${(trip.gearList.filter(g => g.packed).length / trip.gearList.length) * 100}%` : '0%' }}
+                        />
+                      </div>
+                    </div>
+                    <span className="bg-slate-900 text-white p-3 rounded-2xl shadow-lg group-hover:bg-black transition-colors">
+                      <ArrowRight size={20} />
+                    </span>
+                  </div>
                 </div>
               </div>
             </Link>
@@ -87,12 +153,14 @@ export default function Home() {
       {/* Gear overview */}
       {gearItems.length > 0 && (
         <section className="mt-8">
-          <h2 className="font-extrabold text-lg flex items-center gap-2 pb-2 border-b-2 border-accent-light mb-4">
-            装备概览
+          <h2 className="font-extrabold text-xl mb-5 flex items-center gap-2">
+            <Package className="text-emerald-600" size={20} />
+            装备分类预览
           </h2>
-          <div className="flex gap-2 flex-wrap">
+          <div className="flex gap-3 flex-wrap">
             {(Object.entries(byCategory) as [GearCategory, number][]).map(([cat, count]) => (
-              <span key={cat} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-accent-light text-accent text-sm font-medium">
+              <span key={cat} className="inline-flex items-center gap-3 bg-white px-5 py-4 rounded-2xl border border-slate-100 shadow-sm text-slate-700 font-medium">
+                <span className="w-2 h-2 rounded-full bg-emerald-500" />
                 {gearCategoryLabel(cat)} <strong className="font-extrabold">{count}</strong>
               </span>
             ))}
@@ -104,7 +172,7 @@ export default function Home() {
         <h2 className="font-extrabold text-lg flex items-center gap-2 pb-2 border-b-2 border-accent-light mb-4">
           数据备份
         </h2>
-        <div className="bg-surface rounded-3xl border border-slate-100 shadow-sm p-5 flex flex-col sm:flex-row sm:items-center gap-3">
+        <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-5 flex flex-col sm:flex-row sm:items-center gap-3">
           <p className="text-sm text-slate-500 flex-1">
             数据保存在当前浏览器 localStorage。出发前建议导出 JSON 备份，换设备或清空浏览器后可再导入恢复。
           </p>
