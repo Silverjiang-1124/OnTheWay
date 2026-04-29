@@ -1,7 +1,30 @@
-import type { Trip } from '../types';
+import type { Trip, GearItem, TripGear } from '../types';
 import { genId } from '../types';
 
-export const seedGear = [];
+export const seedGear: GearItem[] = [
+  { id: genId(), name: '云层38L背包', category: 'other', brand: 'Osprey', quantity: 1, createdAt: new Date().toISOString() },
+  { id: genId(), name: '飘云1帐篷', category: 'sleep', brand: '三峰出', quantity: 1, createdAt: new Date().toISOString() },
+  { id: genId(), name: '登山杖', category: 'other', brand: '三峰出', quantity: 2, createdAt: new Date().toISOString() },
+  { id: genId(), name: '云岭睡袋', category: 'sleep', brand: '伯希和', quantity: 1, createdAt: new Date().toISOString() },
+  { id: genId(), name: '净水瓶', category: 'kitchen', brand: '康迪', quantity: 1, notes: '一板', createdAt: new Date().toISOString() },
+  { id: genId(), name: '袖套', category: 'clothing', brand: '挪客', quantity: 1, notes: '一副', createdAt: new Date().toISOString() },
+  { id: genId(), name: '冻干粥', category: 'food', quantity: 4, createdAt: new Date().toISOString() },
+  { id: genId(), name: '脱水蔬菜', category: 'food', quantity: 6, createdAt: new Date().toISOString() },
+  { id: genId(), name: '洗洁精/清洁布', category: 'kitchen', brand: '迪卡侬', quantity: 1, createdAt: new Date().toISOString() },
+  { id: genId(), name: '3合1沐浴露', category: 'other', brand: '迪卡侬', quantity: 1, createdAt: new Date().toISOString() },
+  { id: genId(), name: '枕头', category: 'sleep', brand: '挪客', quantity: 1, createdAt: new Date().toISOString() },
+  { id: genId(), name: '牙刷/牙膏', category: 'other', quantity: 1, createdAt: new Date().toISOString() },
+  { id: genId(), name: 'R2.2蛋巢睡垫', category: 'sleep', brand: '牧高迪', quantity: 1, createdAt: new Date().toISOString() },
+  { id: genId(), name: '羊毛袜', category: 'clothing', brand: 'Smartwool', quantity: 2, createdAt: new Date().toISOString() },
+  { id: genId(), name: '速干衣', category: 'clothing', brand: '迪卡侬', quantity: 2, createdAt: new Date().toISOString() },
+  { id: genId(), name: '羽绒服', category: 'clothing', brand: '拓路者', quantity: 1, createdAt: new Date().toISOString() },
+  { id: genId(), name: '冲锋衣', category: 'clothing', brand: '伯希和', quantity: 1, createdAt: new Date().toISOString() },
+  { id: genId(), name: '20000毫安充电宝', category: 'electronics', brand: '小米', quantity: 1, createdAt: new Date().toISOString() },
+  { id: genId(), name: '急救包', category: 'other', quantity: 1, notes: '保温毯/碘伏/创口贴', createdAt: new Date().toISOString() },
+  { id: genId(), name: '头灯', category: 'electronics', brand: '奈特科尔', quantity: 1, createdAt: new Date().toISOString() },
+  { id: genId(), name: '鸭舌帽', category: 'clothing', brand: '凯乐石', quantity: 1, createdAt: new Date().toISOString() },
+  { id: genId(), name: '羊毛帽', category: 'clothing', quantity: 1, createdAt: new Date().toISOString() },
+];
 
 export function createSeedTrip(): Trip {
   const planHtml = `<div class="container" style="max-width:780px;margin:0 auto;font-family:-apple-system,'PingFang SC','Noto Sans SC','Microsoft YaHei',sans-serif;color:#2c2c2c;line-height:1.7;">
@@ -112,10 +135,11 @@ export function createSeedTrip(): Trip {
     endDate: '2026-05-02',
     route: '粗坑→凤阳山→黄茅尖(1929m)→凤阳湖→烧香岩→天堂山→大天堂→南溪村',
     plan: planHtml,
+    trackUrl: 'https://www.2bulu.com/track/t-JSONPxWwVJzp%25253D.htm',
     distance: 31,
     elevation: 3000,
     members: ['我', '队友'],
-    gearList: [],
+    gearList: seedGear.map(g => ({ gearId: g.id, packed: false }) as TripGear),
     status: 'planned',
     journal: '出发前准备：\n· 包车已联系大兵（18857823017），南溪村→粗坑 350元\n· 龙泉买气罐×3\n· 两步路已下载离线轨迹\n· 户外保险已买\n—\n记录回来后补写 ✍️',
     rating: undefined,

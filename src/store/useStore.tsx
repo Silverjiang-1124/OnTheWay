@@ -1,10 +1,10 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import type { GearItem, Trip } from '../types';
 import { genId } from '../types';
-import { createSeedTrip } from './seedData';
+import { createSeedTrip, seedGear } from './seedData';
 
 const STORAGE_KEY = 'ontheway_data';
-const CURRENT_VERSION = 2;
+const CURRENT_VERSION = 4;
 
 interface Store {
   gearItems: GearItem[];
@@ -31,14 +31,16 @@ function loadData(): StoreData {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      // v1 → v2: clear all gear items and trip gear lists
+      // v2 → v3: populate seed gear items and link to trips
       if (!parsed.version || parsed.version < CURRENT_VERSION) {
         const migrated: StoreData = {
           version: CURRENT_VERSION,
-          gearItems: [],
+          gearItems: seedGear,
           trips: (parsed.trips || []).map((t: Trip) => ({
             ...t,
-            gearList: [],
+            gearList: t.gearList.length === 0
+              ? seedGear.map(g => ({ gearId: g.id, packed: false }))
+              : t.gearList,
             members: t.members?.length ? t.members : ['我', '队友'],
           })),
         };
@@ -48,9 +50,9 @@ function loadData(): StoreData {
       return parsed;
     }
   } catch { /* ignore */ }
-  // First visit — seed data (empty gear, trip with plan only)
+  // First visit — seed data
   const seededTrip = createSeedTrip();
-  const data: StoreData = { version: CURRENT_VERSION, gearItems: [], trips: [seededTrip] };
+  const data: StoreData = { version: CURRENT_VERSION, gearItems: seedGear, trips: [seededTrip] };
   localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
   return data;
 }

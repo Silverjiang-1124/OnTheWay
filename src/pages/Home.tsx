@@ -1,6 +1,8 @@
 import { useStore } from '../store/useStore';
 import { gearCategoryLabel } from '../types';
 import { Link } from 'react-router-dom';
+import { Package, CalendarCheck, CheckCircle2, MapPin, Calendar, Mountain } from 'lucide-react';
+
 
 export default function Home() {
   const { gearItems, trips } = useStore();
@@ -14,35 +16,38 @@ export default function Home() {
 
   return (
     <div className="page">
-      <h1 className="page-title">首页</h1>
-
-      <div className="stats-row">
-        <div className="stat-card">
-          <span className="stat-num">{gearItems.length}</span>
-          <span className="stat-label">装备总数</span>
-        </div>
-        <div className="stat-card">
-          <span className="stat-num">{upcoming.length}</span>
-          <span className="stat-label">待出发</span>
-        </div>
-        <div className="stat-card">
-          <span className="stat-num">{completed.length}</span>
-          <span className="stat-label">已完成</span>
-        </div>
+      {/* Stats row */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 my-6">
+        <Link to="/gear" className="bg-surface rounded-3xl border border-slate-100 shadow-sm hover:shadow-lg transition-all p-6 text-center active:scale-[0.98] block">
+          <Package size={32} className="text-accent mx-auto mb-2" />
+          <span className="text-3xl font-extrabold text-accent block">{gearItems.length}</span>
+          <span className="text-sm text-slate-500 mt-1 block">装备总数</span>
+        </Link>
+        <Link to="/trips" className="bg-surface rounded-3xl border border-slate-100 shadow-sm hover:shadow-lg transition-all p-6 text-center active:scale-[0.98] block">
+          <CalendarCheck size={32} className="text-amber mx-auto mb-2" />
+          <span className="text-3xl font-extrabold text-amber block">{upcoming.length}</span>
+          <span className="text-sm text-slate-500 mt-1 block">待出发</span>
+        </Link>
+        <Link to="/trips" className="bg-surface rounded-3xl border border-slate-100 shadow-sm hover:shadow-lg transition-all p-6 text-center active:scale-[0.98] block">
+          <CheckCircle2 size={32} className="text-blue mx-auto mb-2" />
+          <span className="text-3xl font-extrabold text-blue block">{completed.length}</span>
+          <span className="text-sm text-slate-500 mt-1 block">已完成</span>
+        </Link>
       </div>
 
+      {/* Upcoming trips */}
       {upcoming.length > 0 && (
-        <section className="section">
-          <h2 className="section-title">即将出发</h2>
+        <section className="mt-8">
+          <h2 className="font-extrabold text-lg flex items-center gap-2 pb-2 border-b-2 border-accent-light mb-4">
+            即将出发
+          </h2>
           {upcoming.map(trip => (
-            <Link to={`/trips/${trip.id}`} key={trip.id} className="card-link">
-              <div className="trip-mini-card">
-                <div>
-                  <strong>{trip.title}</strong>
-                  <span className="text-muted" style={{ marginLeft: 12 }}>{trip.location}</span>
-                </div>
-                <div className="text-muted" style={{ fontSize: 13 }}>
-                  {trip.startDate} ~ {trip.endDate}
+            <Link to={`/trips/${trip.id}`} key={trip.id} className="block mb-3">
+              <div className="bg-surface rounded-3xl border border-slate-100 shadow-sm hover:shadow-lg transition-all p-5 active:scale-[0.99]">
+                <div className="font-extrabold text-accent">{trip.title}</div>
+                <div className="flex gap-4 text-sm text-slate-500 mt-1.5">
+                  <span className="inline-flex items-center gap-1.5"><MapPin size={14} />{trip.location}</span>
+                  <span className="inline-flex items-center gap-1.5"><Calendar size={14} />{trip.startDate} ~ {trip.endDate}</span>
                 </div>
               </div>
             </Link>
@@ -50,24 +55,29 @@ export default function Home() {
         </section>
       )}
 
+      {/* Gear overview */}
       {gearItems.length > 0 && (
-        <section className="section">
-          <h2 className="section-title">装备概览</h2>
-          <div className="cat-chips">
+        <section className="mt-8">
+          <h2 className="font-extrabold text-lg flex items-center gap-2 pb-2 border-b-2 border-accent-light mb-4">
+            装备概览
+          </h2>
+          <div className="flex gap-2 flex-wrap">
             {Object.entries(byCategory).map(([cat, count]) => (
-              <span key={cat} className="chip">
-                {gearCategoryLabel(cat as any)} <strong>{count}</strong>
+              <span key={cat} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-accent-light text-accent text-sm font-medium">
+                {gearCategoryLabel(cat as any)} <strong className="font-extrabold">{count}</strong>
               </span>
             ))}
           </div>
         </section>
       )}
 
+      {/* Empty state */}
       {trips.length === 0 && gearItems.length === 0 && (
-        <div className="empty-state">
-          <p>欢迎使用 OnTheWay 🏔️</p>
-          <p style={{ fontSize: 14, color: 'var(--text-secondary)', marginTop: 8 }}>
-            先去 <Link to="/gear">装备库</Link> 添加你的装备，再创建行程吧
+        <div className="py-20 text-center text-slate-500">
+          <Mountain size={48} className="mx-auto mb-4 text-slate-300" />
+          <p>欢迎使用 OnTheWay</p>
+          <p className="text-sm mt-2">
+            先去 <Link to="/gear" className="text-accent hover:underline">装备库</Link> 添加你的装备，再创建行程吧
           </p>
         </div>
       )}

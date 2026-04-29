@@ -41,6 +41,7 @@ export interface Trip {
   startDate: string;
   endDate: string;
   route?: string;
+  trackUrl?: string;
   plan?: string;
   distance?: number;
   elevation?: number;

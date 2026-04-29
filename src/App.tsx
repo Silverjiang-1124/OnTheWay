@@ -21,11 +21,9 @@ export default function App() {
             <Route path="/trips/:id/edit" element={<TripForm />} />
             <Route path="/trips/:id" element={<TripDetail />} />
             <Route path="*" element={
-              <div className="page">
-                <div className="empty-state">
-                  <p>页面不存在</p>
-                  <p style={{ fontSize: 14, marginTop: 8 }}><Link to="/">返回首页</Link></p>
-                </div>
+              <div className="py-20 text-center text-slate-500">
+                <p>页面不存在</p>
+                <p className="text-sm mt-2"><Link to="/" className="text-accent hover:underline">返回首页</Link></p>
               </div>
             } />
           </Routes>
