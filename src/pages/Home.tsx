@@ -1,18 +1,47 @@
 import { useStore } from '../store/useStore';
-import { gearCategoryLabel } from '../types';
+import { gearCategoryLabel, type GearCategory } from '../types';
 import { Link } from 'react-router-dom';
-import { Package, CalendarCheck, CheckCircle2, MapPin, Calendar, Mountain } from 'lucide-react';
+import { Package, CalendarCheck, CheckCircle2, MapPin, Calendar, Mountain, Download, Upload } from 'lucide-react';
 
 
 export default function Home() {
-  const { gearItems, trips } = useStore();
+  const { gearItems, trips, exportBackup, importBackup } = useStore();
 
   const upcoming = trips.filter(t => t.status === 'planned').sort((a, b) => a.startDate.localeCompare(b.startDate));
   const completed = trips.filter(t => t.status === 'completed');
   const byCategory = gearItems.reduce((acc, g) => {
     acc[g.category] = (acc[g.category] || 0) + 1;
     return acc;
-  }, {} as Record<string, number>);
+  }, {} as Partial<Record<GearCategory, number>>);
+
+  const handleExport = () => {
+    const backup = exportBackup();
+    const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `ontheway-backup-${backup.exportedAt.slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleImport = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'application/json,.json';
+    input.onchange = () => {
+      const file = input.files?.[0];
+      if (!file) return;
+      file.text().then(text => {
+        if (!window.confirm('导入会按 ID 合并备份数据；同 ID 数据会以备份为准。确认导入？')) return;
+        const result = importBackup(JSON.parse(text));
+        window.alert(`导入完成：装备 ${result.gearCount} 条，行程 ${result.tripCount} 条。`);
+      }).catch(() => {
+        window.alert('导入失败：请确认文件是 OnTheWay JSON 备份。');
+      });
+    };
+    input.click();
+  };
 
   return (
     <div className="page">
@@ -62,14 +91,39 @@ export default function Home() {
             装备概览
           </h2>
           <div className="flex gap-2 flex-wrap">
-            {Object.entries(byCategory).map(([cat, count]) => (
+            {(Object.entries(byCategory) as [GearCategory, number][]).map(([cat, count]) => (
               <span key={cat} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-accent-light text-accent text-sm font-medium">
-                {gearCategoryLabel(cat as any)} <strong className="font-extrabold">{count}</strong>
+                {gearCategoryLabel(cat)} <strong className="font-extrabold">{count}</strong>
               </span>
             ))}
           </div>
         </section>
       )}
+
+      <section className="mt-8">
+        <h2 className="font-extrabold text-lg flex items-center gap-2 pb-2 border-b-2 border-accent-light mb-4">
+          数据备份
+        </h2>
+        <div className="bg-surface rounded-3xl border border-slate-100 shadow-sm p-5 flex flex-col sm:flex-row sm:items-center gap-3">
+          <p className="text-sm text-slate-500 flex-1">
+            数据保存在当前浏览器 localStorage。出发前建议导出 JSON 备份，换设备或清空浏览器后可再导入恢复。
+          </p>
+          <button
+            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 border border-slate-100 rounded-2xl text-sm font-semibold hover:bg-slate-50 transition-all active:scale-95 cursor-pointer"
+            onClick={handleImport}
+          >
+            <Upload size={16} />
+            导入备份
+          </button>
+          <button
+            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-accent text-white rounded-2xl text-sm font-semibold shadow-sm hover:shadow-lg transition-all active:scale-95 cursor-pointer"
+            onClick={handleExport}
+          >
+            <Download size={16} />
+            导出备份
+          </button>
+        </div>
+      </section>
 
       {/* Empty state */}
       {trips.length === 0 && gearItems.length === 0 && (

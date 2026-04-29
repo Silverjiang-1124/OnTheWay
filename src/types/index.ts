@@ -27,12 +27,21 @@ export interface GearItem {
 export interface TripGear {
   gearId: string;
   packed: boolean;
-  assignee?: string;
+  assignee?: Assignee;
 }
 
 export const ASSIGNEES = ['我', '队友', '公共'] as const;
+export type Assignee = typeof ASSIGNEES[number];
 
 export type TripStatus = 'planned' | 'completed';
+
+export interface TripRiskInfo {
+  weather?: string;
+  supply?: string;
+  transport?: string;
+  emergency?: string;
+  notes?: string;
+}
 
 export interface Trip {
   id: string;
@@ -45,6 +54,7 @@ export interface Trip {
   plan?: string;
   distance?: number;
   elevation?: number;
+  riskInfo?: TripRiskInfo;
   members: string[];
   gearList: TripGear[];
   journal?: string;
@@ -55,4 +65,11 @@ export interface Trip {
 
 export function genId(): string {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+}
+
+export interface BackupData {
+  version: number;
+  exportedAt: string;
+  gearItems: GearItem[];
+  trips: Trip[];
 }

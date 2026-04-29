@@ -3,6 +3,8 @@ import { useStore } from '../store/useStore';
 import { GEAR_CATEGORIES, gearCategoryLabel, type GearCategory, type GearItem } from '../types';
 import { Package, Plus, Moon, ChefHat, Shirt, Apple, Smartphone, Ellipsis, Tag, Weight, Trash2 } from 'lucide-react';
 
+type GearDraft = Omit<GearItem, 'id' | 'createdAt'>;
+
 const categoryIcons: Record<string, React.ComponentType<{ size?: number; className?: string }>> = {
   sleep: Moon,
   kitchen: ChefHat,
@@ -120,7 +122,7 @@ export default function GearLibrary() {
             if (editing) {
               updateGear(editing.id, data);
             } else {
-              addGear(data as any);
+              addGear(data);
             }
             setShowForm(false);
             setEditing(null);
@@ -141,7 +143,7 @@ export default function GearLibrary() {
 
 function GearForm({ initial, onSave, onDelete, onClose }: {
   initial: GearItem | null;
-  onSave: (data: Partial<GearItem>) => void;
+  onSave: (data: GearDraft) => void;
   onDelete?: () => void;
   onClose: () => void;
 }) {

@@ -19,24 +19,49 @@
   --color-red-light: #fee2e2;
 }
 
-/* ---- Print styles ---- */
 @media print {
-  .sidebar, .btn, .btn-remove, .filter-tabs,
-  .export-overlay, .export-menu, .btn-export,
-  .back-link, .modal-overlay,
-  .packing-row-wrap .btn-remove,
-  .section-title .text-muted { display: none !important; }
+  @page {
+    size: A4;
+    margin: 12mm;
+  }
 
-  .app-layout { display: block; }
-  .main-content { max-width: 100% !important; padding: 0 !important; }
-  .page { padding: 0; }
-  .page-header { page-break-after: avoid; }
+  html,
+  body {
+    background: #fff !important;
+    color: #111827 !important;
+  }
 
-  .plan-hidden { display: block !important; }
-  .plan-iframe-wrap { display: none !important; }
-  .plan-print-only { display: block !important; }
+  aside,
+  nav,
+  button,
+  input,
+  select,
+  textarea,
+  .print\:hidden {
+    display: none !important;
+  }
 
-  .packing-row-wrap { break-inside: avoid; }
-  .packing-row input[type="checkbox"] { display: none; }
-  .packed-text { text-decoration: none; color: inherit; }
+  main {
+    max-width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .page {
+    padding: 0 !important;
+  }
+
+  a {
+    color: inherit !important;
+    text-decoration: none !important;
+  }
+
+  section,
+  .break-inside-avoid {
+    break-inside: avoid;
+  }
+
+  .hidden.print\:block {
+    display: block !important;
+  }
 }

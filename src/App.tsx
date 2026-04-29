@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
-import { StoreProvider } from './store/useStore';
+import { StoreProvider } from './store/StoreProvider';
 import Layout from './components/Layout';
 import Home from './pages/Home';
 import GearLibrary from './pages/GearLibrary';

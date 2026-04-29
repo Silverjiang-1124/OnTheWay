@@ -1,45 +1,20 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate, Link, useParams } from 'react-router-dom';
 import { useStore } from '../store/useStore';
-import { GEAR_CATEGORIES, gearCategoryLabel, type GearCategory } from '../types';
-import { ArrowLeft, Route, AlertCircle } from 'lucide-react';
+import { GEAR_CATEGORIES, gearCategoryLabel, type GearCategory, type Trip, type TripRiskInfo } from '../types';
+import { ArrowLeft, Route, AlertCircle, ShieldAlert } from 'lucide-react';
+
+interface TripFormFieldsProps {
+  existingTrip?: Trip;
+  gearItems: ReturnType<typeof useStore>['gearItems'];
+  addTrip: ReturnType<typeof useStore>['addTrip'];
+  updateTrip: ReturnType<typeof useStore>['updateTrip'];
+}
 
 export default function TripForm() {
-  const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const { gearItems, trips, addTrip, updateTrip } = useStore();
   const existingTrip = id ? trips.find(t => t.id === id) : undefined;
-  const isEdit = !!existingTrip;
-
-  const [title, setTitle] = useState('');
-  const [location, setLocation] = useState('');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
-  const [route, setRoute] = useState('');
-  const [trackUrl, setTrackUrl] = useState('');
-  const [distance, setDistance] = useState('');
-  const [elevation, setElevation] = useState('');
-  const [plan, setPlan] = useState('');
-  const [members, setMembers] = useState('');
-  const [filter, setFilter] = useState<GearCategory | 'all'>('all');
-  const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [dateError, setDateError] = useState('');
-
-  useEffect(() => {
-    if (existingTrip) {
-      setTitle(existingTrip.title);
-      setLocation(existingTrip.location);
-      setStartDate(existingTrip.startDate);
-      setEndDate(existingTrip.endDate);
-      setRoute(existingTrip.route ?? '');
-      setTrackUrl(existingTrip.trackUrl ?? '');
-      setDistance(existingTrip.distance?.toString() ?? '');
-      setElevation(existingTrip.elevation?.toString() ?? '');
-      setMembers(existingTrip.members.join(', '));
-      setPlan(existingTrip.plan ?? '');
-      setSelected(new Set(existingTrip.gearList.map(tg => tg.gearId)));
-    }
-  }, [existingTrip]);
 
   if (id && !existingTrip) {
     return (
@@ -54,6 +29,41 @@ export default function TripForm() {
     );
   }
 
+  return (
+    <TripFormFields
+      key={existingTrip?.id ?? 'new'}
+      existingTrip={existingTrip}
+      gearItems={gearItems}
+      addTrip={addTrip}
+      updateTrip={updateTrip}
+    />
+  );
+}
+
+function TripFormFields({ existingTrip, gearItems, addTrip, updateTrip }: TripFormFieldsProps) {
+  const navigate = useNavigate();
+  const isEdit = Boolean(existingTrip);
+  const [title, setTitle] = useState(existingTrip?.title ?? '');
+  const [location, setLocation] = useState(existingTrip?.location ?? '');
+  const [startDate, setStartDate] = useState(existingTrip?.startDate ?? '');
+  const [endDate, setEndDate] = useState(existingTrip?.endDate ?? '');
+  const [route, setRoute] = useState(existingTrip?.route ?? '');
+  const [trackUrl, setTrackUrl] = useState(existingTrip?.trackUrl ?? '');
+  const [distance, setDistance] = useState(existingTrip?.distance?.toString() ?? '');
+  const [elevation, setElevation] = useState(existingTrip?.elevation?.toString() ?? '');
+  const [plan, setPlan] = useState(existingTrip?.plan ?? '');
+  const [members, setMembers] = useState(existingTrip?.members.join(', ') ?? '');
+  const [weather, setWeather] = useState(existingTrip?.riskInfo?.weather ?? '');
+  const [supply, setSupply] = useState(existingTrip?.riskInfo?.supply ?? '');
+  const [transport, setTransport] = useState(existingTrip?.riskInfo?.transport ?? '');
+  const [emergency, setEmergency] = useState(existingTrip?.riskInfo?.emergency ?? '');
+  const [notes, setNotes] = useState(existingTrip?.riskInfo?.notes ?? '');
+  const [filter, setFilter] = useState<GearCategory | 'all'>('all');
+  const [selected, setSelected] = useState<Set<string>>(
+    () => new Set(existingTrip?.gearList.map(tg => tg.gearId) ?? [])
+  );
+  const [dateError, setDateError] = useState('');
+
   const filtered = filter === 'all' ? gearItems : gearItems.filter(g => g.category === filter);
   const toggleSelect = (gearId: string) => {
     setSelected(prev => {
@@ -61,6 +71,17 @@ export default function TripForm() {
       if (next.has(gearId)) next.delete(gearId); else next.add(gearId);
       return next;
     });
+  };
+
+  const buildRiskInfo = (): TripRiskInfo | undefined => {
+    const info: TripRiskInfo = {
+      weather: weather.trim() || undefined,
+      supply: supply.trim() || undefined,
+      transport: transport.trim() || undefined,
+      emergency: emergency.trim() || undefined,
+      notes: notes.trim() || undefined,
+    };
+    return Object.values(info).some(Boolean) ? info : undefined;
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -81,6 +102,7 @@ export default function TripForm() {
       distance: distance ? Number(distance) : undefined,
       elevation: elevation ? Number(elevation) : undefined,
       plan: plan.trim() || undefined,
+      riskInfo: buildRiskInfo(),
       members: members.split(/[,，]/).map(s => s.trim()).filter(Boolean),
       gearList: Array.from(selected).map(gearId => {
         const existing = existingTrip?.gearList.find(tg => tg.gearId === gearId);
@@ -88,8 +110,8 @@ export default function TripForm() {
       }),
       status: existingTrip?.status ?? 'planned',
     };
-    if (isEdit) {
-      updateTrip(id!, data);
+    if (isEdit && existingTrip) {
+      updateTrip(existingTrip.id, data);
     } else {
       addTrip(data);
     }
@@ -98,7 +120,7 @@ export default function TripForm() {
 
   return (
     <div className="page">
-      <div className="mb-4">
+      <div className="mb-4 print:hidden">
         <Link to="/trips" className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-accent transition-colors">
           <ArrowLeft size={14} /> 返回行程列表
         </Link>
@@ -109,7 +131,7 @@ export default function TripForm() {
         {isEdit ? '编辑行程' : '新行程'}
       </h1>
 
-      <form onSubmit={handleSubmit} className="bg-surface rounded-3xl border border-slate-100 shadow-sm p-8 space-y-5">
+      <form onSubmit={handleSubmit} className="bg-surface rounded-3xl border border-slate-100 shadow-sm p-5 sm:p-8 space-y-5">
         <div>
           <label className="text-[10px] font-black tracking-wider uppercase text-slate-500 mb-1.5 block">标题 *</label>
           <input value={title} onChange={e => setTitle(e.target.value)} placeholder="例: 五一千八线重装徒步" required
@@ -164,21 +186,36 @@ export default function TripForm() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="text-[10px] font-black tracking-wider uppercase text-slate-500 mb-1.5 block">距离 (km)</label>
-            <input type="number" value={distance} onChange={e => setDistance(e.target.value)} placeholder="可选"
+            <input type="number" min={0} value={distance} onChange={e => setDistance(e.target.value)} placeholder="可选"
               className="w-full px-4 py-3 border border-slate-100 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent transition-all bg-surface" />
           </div>
           <div>
             <label className="text-[10px] font-black tracking-wider uppercase text-slate-500 mb-1.5 block">爬升 (m)</label>
-            <input type="number" value={elevation} onChange={e => setElevation(e.target.value)} placeholder="可选"
+            <input type="number" min={0} value={elevation} onChange={e => setElevation(e.target.value)} placeholder="可选"
               className="w-full px-4 py-3 border border-slate-100 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent transition-all bg-surface" />
           </div>
         </div>
+
+        <section className="rounded-3xl border border-amber-light bg-amber-light/20 p-4 sm:p-5 space-y-4">
+          <h2 className="font-extrabold text-sm flex items-center gap-2 text-amber">
+            <ShieldAlert size={16} />
+            出发前风险信息
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <RiskInput label="天气" value={weather} onChange={setWeather} placeholder="例: 出发前一天复查龙泉山区天气" />
+            <RiskInput label="补给" value={supply} onChange={setSupply} placeholder="例: 凤阳湖后全天无补给，每人 3L 水" />
+            <RiskInput label="交通" value={transport} onChange={setTransport} placeholder="例: 南溪村包车回粗坑，提前联系" />
+            <RiskInput label="紧急联系人" value={emergency} onChange={setEmergency} placeholder="例: 队长/司机/景区电话" />
+          </div>
+          <RiskInput label="注意事项" value={notes} onChange={setNotes} placeholder="例: 夜间山路慢行，雨衣和保暖层必带" multiLine />
+        </section>
 
         <div>
           <label className="text-[10px] font-black tracking-wider uppercase text-slate-500 mb-1.5 block">行程计划 (HTML)</label>
           <textarea rows={8} value={plan} onChange={e => setPlan(e.target.value)}
             placeholder="输入 HTML 格式的详细行程计划，留空则不显示"
             className="w-full px-4 py-3 border border-slate-100 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent transition-all bg-surface resize-y min-h-[120px] font-mono" />
+          <p className="text-xs text-slate-400 mt-2">展示时会自动移除脚本、事件属性和危险链接；后续可迁移为 Markdown/结构化日程。</p>
         </div>
 
         {gearItems.length > 0 && (
@@ -202,7 +239,7 @@ export default function TripForm() {
                   onClick={() => setFilter(cat.value)}>{cat.label}</button>
               ))}
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 max-h-72 overflow-y-auto p-2">
+            <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-4 gap-2 max-h-72 overflow-y-auto p-2">
               {filtered.map(item => (
                 <label key={item.id}
                   className={`flex items-center gap-2 px-3 py-2.5 rounded-2xl border text-sm cursor-pointer transition-all ${
@@ -226,7 +263,7 @@ export default function TripForm() {
           </div>
         )}
 
-        <div className="flex items-center gap-3 pt-2">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 pt-2">
           <button type="button" onClick={() => navigate('/trips')}
             className="px-5 py-2.5 border border-slate-100 rounded-2xl text-sm font-medium hover:bg-slate-50 transition-all active:scale-95 cursor-pointer">
             取消
@@ -237,6 +274,36 @@ export default function TripForm() {
           </button>
         </div>
       </form>
+    </div>
+  );
+}
+
+function RiskInput({ label, value, onChange, placeholder, multiLine }: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder: string;
+  multiLine?: boolean;
+}) {
+  return (
+    <div>
+      <label className="text-[10px] font-black tracking-wider uppercase text-slate-500 mb-1.5 block">{label}</label>
+      {multiLine ? (
+        <textarea
+          rows={3}
+          value={value}
+          onChange={e => onChange(e.target.value)}
+          placeholder={placeholder}
+          className="w-full px-4 py-3 border border-slate-100 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent transition-all bg-surface resize-y"
+        />
+      ) : (
+        <input
+          value={value}
+          onChange={e => onChange(e.target.value)}
+          placeholder={placeholder}
+          className="w-full px-4 py-3 border border-slate-100 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent transition-all bg-surface"
+        />
+      )}
     </div>
   );
 }

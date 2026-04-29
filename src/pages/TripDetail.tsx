@@ -1,21 +1,48 @@
+import { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useStore } from '../store/useStore';
-import { GEAR_CATEGORIES, gearCategoryLabel, type GearCategory } from '../types';
-import { useState } from 'react';
+import {
+  ASSIGNEES,
+  GEAR_CATEGORIES,
+  gearCategoryLabel,
+  type Assignee,
+  type GearCategory,
+  type GearItem,
+  type Trip,
+  type TripGear,
+} from '../types';
 import {
   ArrowLeft, MapPin, Calendar, Ruler, Mountain, Users, MapIcon,
   Download, Edit3, FileDown, Printer, ClipboardList, Trash2, Backpack,
-  Plus, X, Star, Frown
+  Plus, X, Star, Frown, Scale, ShieldAlert
 } from 'lucide-react';
 
-type AssigneeFilter = '全部' | '我' | '公共' | '队友';
+type AssigneeFilter = '全部' | Assignee;
+
+interface TripDetailContentProps {
+  trip: Trip;
+  gearItems: GearItem[];
+  updateTrip: ReturnType<typeof useStore>['updateTrip'];
+  deleteTrip: ReturnType<typeof useStore>['deleteTrip'];
+  togglePacked: ReturnType<typeof useStore>['togglePacked'];
+  addGearToTrip: ReturnType<typeof useStore>['addGearToTrip'];
+  removeGearFromTrip: ReturnType<typeof useStore>['removeGearFromTrip'];
+}
+
+interface GearRow {
+  gearId: string;
+  name: string;
+  packed: boolean;
+  assignee?: Assignee;
+  quantity: number;
+  weight: number;
+}
 
 export default function TripDetail() {
-  const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
-  const { trips, gearItems, updateTrip, deleteTrip, togglePacked, addGearToTrip, removeGearFromTrip } = useStore();
+  const store = useStore();
+  const trip = store.trips.find(t => t.id === id);
 
-  const trip = trips.find(t => t.id === id);
   if (!trip) {
     return (
       <div className="page">
@@ -28,6 +55,19 @@ export default function TripDetail() {
     );
   }
 
+  return <TripDetailContent key={trip.id} trip={trip} {...store} />;
+}
+
+function TripDetailContent({
+  trip,
+  gearItems,
+  updateTrip,
+  deleteTrip,
+  togglePacked,
+  addGearToTrip,
+  removeGearFromTrip,
+}: TripDetailContentProps) {
+  const navigate = useNavigate();
   const [editingJournal, setEditingJournal] = useState(false);
   const [journalText, setJournalText] = useState(trip.journal ?? '');
   const [rating, setRating] = useState(trip.rating ?? 0);
@@ -40,7 +80,6 @@ export default function TripDetail() {
 
   const gearMap = new Map(gearItems.map(g => [g.id, g]));
   const tripGearIds = new Set(trip.gearList.map(tg => tg.gearId));
-
   const availableGear = gearItems.filter(g => !tripGearIds.has(g.id));
   const filteredAvailable = addFilter === 'all'
     ? availableGear
@@ -51,17 +90,32 @@ export default function TripDetail() {
     return (tg.assignee ?? '我') === assigneeFilter;
   });
 
-  const groupedGear: Record<string, { gearId: string; name: string; packed: boolean; assignee?: string }[]> = {};
+  const groupedGear: Record<string, GearRow[]> = {};
   for (const tg of filteredGearList) {
     const gear = gearMap.get(tg.gearId);
     if (!gear) continue;
     const cat = gearCategoryLabel(gear.category);
     if (!groupedGear[cat]) groupedGear[cat] = [];
-    groupedGear[cat].push({ gearId: tg.gearId, name: gear.name, packed: tg.packed, assignee: tg.assignee });
+    groupedGear[cat].push({
+      gearId: tg.gearId,
+      name: gear.name,
+      packed: tg.packed,
+      assignee: tg.assignee,
+      quantity: gear.quantity,
+      weight: gearWeight(gear),
+    });
   }
 
   const packedCount = filteredGearList.filter(g => g.packed).length;
   const totalCount = filteredGearList.length;
+  const allStats = summarizeGear(trip.gearList, gearMap);
+  const filteredStats = summarizeGear(filteredGearList, gearMap);
+  const byCategory = summarizeByCategory(filteredGearList, gearMap);
+  const byAssignee = summarizeByAssignee(trip.gearList, gearMap);
+  const packedPercent = allStats.count ? Math.round((allStats.packedCount / allStats.count) * 100) : 0;
+  const riskEntries = riskInfoEntries(trip);
+  const sanitizedPlan = trip.plan ? sanitizeHtml(trip.plan) : '';
+  const planDoc = sanitizedPlan ? wrapPlanHtml(sanitizedPlan) : '';
 
   const handleSaveJournal = () => {
     updateTrip(trip.id, { journal: journalText || undefined, rating: rating || undefined });
@@ -74,63 +128,14 @@ export default function TripDetail() {
     updateTrip(trip.id, { status: newStatus });
   };
 
-  const handleCopySummary = (t: typeof trip, done: (v: boolean) => void) => {
-    const gearById = new Map(gearItems.map(g => [g.id, g]));
-    const lines: string[] = [];
-    lines.push(`🏔️ ${t.title}`);
-    lines.push(`📍 ${t.location}  |  📅 ${t.startDate} ~ ${t.endDate}`);
-    if (t.route) lines.push(`🗺️ ${t.route}`);
-    if (t.distance || t.elevation) {
-      const parts: string[] = [];
-      if (t.distance) parts.push(`📏 ${t.distance}km`);
-      if (t.elevation) parts.push(`🏔️ ${t.elevation}m`);
-      if (t.members.length) parts.push(`👥 ${t.members.join(', ')}`);
-      lines.push(parts.join('  |  '));
-    }
-    lines.push('');
-
-    if (t.plan) {
-      lines.push('━'.repeat(20));
-      lines.push('📋 行程计划');
-      lines.push('━'.repeat(20));
-      lines.push(stripHtml(t.plan).trim());
-      lines.push('');
-    }
-
-    if (t.gearList.length > 0) {
-      lines.push('━'.repeat(20));
-      lines.push('🎒 打包清单');
-      lines.push('━'.repeat(20));
-      const catGroups: Record<string, string[]> = {};
-      for (const tg of t.gearList) {
-        const g = gearById.get(tg.gearId);
-        if (!g) continue;
-        const cat = gearCategoryLabel(g.category);
-        if (!catGroups[cat]) catGroups[cat] = [];
-        const mark = tg.packed ? '✅' : '⬜';
-        const who = tg.assignee ? ` (${tg.assignee})` : '';
-        catGroups[cat].push(`  ${mark} ${g.name}${who}`);
-      }
-      for (const [cat, items] of Object.entries(catGroups)) {
-        lines.push(`\n${cat}`);
-        lines.push(...items);
-      }
-      lines.push('');
-    }
-
-    if (t.journal) {
-      lines.push('━'.repeat(20));
-      lines.push('📝 游记');
-      lines.push('━'.repeat(20));
-      lines.push(t.journal);
-    }
-
-    navigator.clipboard.writeText(lines.join('\n')).then(() => {
+  const handleCopySummary = (done: (v: boolean) => void) => {
+    const lines = buildSummaryText(trip, gearItems, sanitizedPlan, allStats);
+    navigator.clipboard.writeText(lines).then(() => {
       done(true);
       setTimeout(() => done(false), 2000);
     }).catch(() => {
       const ta = document.createElement('textarea');
-      ta.value = lines.join('\n');
+      ta.value = lines;
       document.body.appendChild(ta);
       ta.select();
       document.execCommand('copy');
@@ -140,31 +145,27 @@ export default function TripDetail() {
     });
   };
 
-  const handleAddGear = (gearId: string, assignee?: string) => {
+  const handleAddGear = (gearId: string, assignee?: Assignee) => {
     const a = assignee ?? (assigneeFilter === '全部' ? undefined : assigneeFilter);
     addGearToTrip(trip.id, gearId, a);
   };
 
-  const assigneeCounts = {
+  const assigneeCounts: Record<AssigneeFilter, number> = {
     全部: trip.gearList.length,
     我: trip.gearList.filter(tg => (tg.assignee ?? '我') === '我').length,
     公共: trip.gearList.filter(tg => tg.assignee === '公共').length,
     队友: trip.gearList.filter(tg => tg.assignee === '队友').length,
   };
 
-  const planDoc = trip.plan ? wrapPlanHtml(trip.plan) : '';
-
   return (
     <div className="page">
-      {/* Back link */}
-      <div className="mb-4">
+      <div className="mb-4 print:hidden">
         <Link to="/trips" className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-accent transition-colors">
           <ArrowLeft size={14} /> 返回行程列表
         </Link>
       </div>
 
-      {/* Trip header */}
-      <div className="flex items-start justify-between mb-4 gap-4">
+      <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between mb-4 gap-4">
         <div className="flex-1 min-w-0">
           <h1 className="text-2xl font-extrabold">{trip.title}</h1>
           <div className="flex flex-wrap gap-4 text-sm text-slate-500 mt-2">
@@ -176,22 +177,21 @@ export default function TripDetail() {
           </div>
           {trip.route && (
             <div className="mt-3 px-4 py-3 bg-accent-light rounded-2xl text-sm flex items-center gap-2">
-              <MapIcon size={15} className="text-accent" />
+              <MapIcon size={15} className="text-accent shrink-0" />
               {trip.route}
             </div>
           )}
           {trip.trackUrl && (
             <div className="mt-2 px-4 py-3 bg-blue-light rounded-2xl text-sm flex items-center gap-2">
-              <Download size={14} className="text-blue" />
-              <a href={trip.trackUrl} target="_blank" rel="noopener noreferrer" className="text-blue hover:underline">
+              <Download size={14} className="text-blue shrink-0" />
+              <a href={trip.trackUrl} target="_blank" rel="noopener noreferrer" className="text-blue hover:underline break-all">
                 下载轨迹
               </a>
             </div>
           )}
         </div>
 
-        {/* Action buttons */}
-        <div className="flex items-center gap-2 shrink-0 relative">
+        <div className="print:hidden flex flex-wrap items-center gap-2 shrink-0 relative">
           <button
             className={`text-[10px] font-black tracking-wider uppercase px-3 py-1.5 rounded-full transition-all cursor-pointer ${
               trip.status === 'planned'
@@ -229,7 +229,7 @@ export default function TripDetail() {
                   </button>
                   <button
                     className="w-full px-4 py-3 text-sm text-left hover:bg-accent-light/30 flex items-center gap-2 transition-all cursor-pointer"
-                    onClick={() => handleCopySummary(trip, setCopied)}
+                    onClick={() => handleCopySummary(setCopied)}
                   >
                     <ClipboardList size={14} />
                     {copied ? '已复制!' : '复制文字摘要'}
@@ -238,7 +238,6 @@ export default function TripDetail() {
               </>
             )}
           </div>
-          <div className="w-px h-5 bg-slate-200 shrink-0" />
           <button
             className="inline-flex items-center gap-1.5 px-4 py-2 border border-slate-100 rounded-2xl text-sm font-medium text-red hover:bg-red-light transition-all active:scale-95 cursor-pointer"
             onClick={() => {
@@ -254,10 +253,26 @@ export default function TripDetail() {
         </div>
       </div>
 
-      {/* Trip Plan */}
+      {riskEntries.length > 0 && (
+        <section className="mt-6 rounded-3xl border border-amber-light bg-amber-light/20 p-5">
+          <h2 className="font-extrabold text-lg flex items-center gap-2 mb-4">
+            <ShieldAlert size={20} className="text-amber" />
+            出发前风险信息
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {riskEntries.map(([label, value]) => (
+              <div key={label} className="bg-surface/80 border border-white rounded-2xl px-4 py-3">
+                <div className="text-[10px] font-black tracking-wider uppercase text-slate-400 mb-1">{label}</div>
+                <div className="text-sm whitespace-pre-wrap">{value}</div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
       {trip.plan && (
         <section className="mt-8">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-4 print:hidden">
             <h2 className="font-extrabold text-lg flex items-center gap-2">📋 行程计划</h2>
             <button
               className="px-4 py-2 border border-slate-100 rounded-2xl text-sm font-medium hover:bg-slate-50 transition-all active:scale-95 cursor-pointer"
@@ -266,30 +281,25 @@ export default function TripDetail() {
               {showPlan ? '收起' : '展开'}
             </button>
           </div>
-          <div className={`rounded-3xl border border-slate-100 overflow-hidden ${showPlan ? '' : 'hidden'}`}>
-            <iframe className="w-full h-[520px] border-none block" srcDoc={planDoc} title="行程计划" />
+          <div className={`rounded-3xl border border-slate-100 overflow-hidden print:hidden ${showPlan ? '' : 'hidden'}`}>
+            <iframe className="w-full h-[520px] border-none block" srcDoc={planDoc} sandbox="" title="行程计划" />
+          </div>
+          <div className="hidden print:block mt-8">
+            <h2 className="font-extrabold text-lg border-b-2 border-accent-light pb-2 mb-4">📋 行程计划</h2>
+            <div className="text-sm leading-relaxed" dangerouslySetInnerHTML={{ __html: sanitizedPlan }} />
           </div>
         </section>
       )}
 
-      {/* Print-only plan */}
-      {trip.plan && (
-        <div className="hidden print:block mt-8">
-          <h2 className="font-extrabold text-lg border-b-2 border-accent-light pb-2 mb-4">📋 行程计划</h2>
-          <div className="text-sm leading-relaxed" dangerouslySetInnerHTML={{ __html: trip.plan }} />
-        </div>
-      )}
-
-      {/* Packing Checklist */}
       <section className="mt-8">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-3">
           <h2 className="font-extrabold text-lg flex items-center gap-2">
             <Backpack size={22} className="text-accent" />
             打包清单
             <span className="text-sm font-normal text-slate-500">({packedCount}/{totalCount})</span>
           </h2>
           <button
-            className="inline-flex items-center gap-1.5 px-4 py-2 border border-slate-100 rounded-2xl text-sm font-medium hover:bg-slate-50 transition-all active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            className="print:hidden inline-flex items-center justify-center gap-1.5 px-4 py-2 border border-slate-100 rounded-2xl text-sm font-medium hover:bg-slate-50 transition-all active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             onClick={() => setShowAddGear(true)}
             disabled={gearItems.length === 0}
           >
@@ -298,9 +308,20 @@ export default function TripDetail() {
           </button>
         </div>
 
-        {/* Assignee filter */}
-        <div className="flex gap-2 flex-wrap mb-4">
-          {(['全部', '我', '公共', '队友'] as const).map(a => (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+          <StatCard label="总重量" value={formatWeight(allStats.totalWeight)} />
+          <StatCard label="已打包" value={formatWeight(allStats.packedWeight)} />
+          <StatCard label="未打包" value={formatWeight(allStats.totalWeight - allStats.packedWeight)} />
+          <StatCard label="完成度" value={`${packedPercent}%`} />
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-4">
+          <WeightBreakdown title="按分类重量" entries={byCategory} />
+          <WeightBreakdown title="按负责人重量" entries={byAssignee} />
+        </div>
+
+        <div className="print:hidden flex gap-2 flex-wrap mb-4">
+          {(['全部', ...ASSIGNEES] as const).map(a => (
             <button
               key={a}
               className={`px-4 py-2 rounded-full border text-sm font-medium transition-all active:scale-95 cursor-pointer ${
@@ -326,33 +347,34 @@ export default function TripDetail() {
           </div>
         )}
 
+        {filteredStats.count > 0 && assigneeFilter !== '全部' && (
+          <p className="text-xs text-slate-500 mb-3">
+            当前负责人重量：<span className="font-extrabold text-accent">{formatWeight(filteredStats.totalWeight)}</span>
+          </p>
+        )}
+
         {Object.entries(groupedGear).map(([cat, items]) => (
-          <div key={cat} className="mb-4">
+          <div key={cat} className="mb-4 break-inside-avoid">
             <h3 className="text-[10px] font-black tracking-wider uppercase text-slate-400 mb-2 mt-4 first:mt-0">{cat}</h3>
             {items.map(item => (
-              <div key={item.gearId} className="group flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-slate-50/50 transition-all">
+              <div key={item.gearId} className="group flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-slate-50/50 transition-all break-inside-avoid">
                 <label className="flex items-center gap-3 flex-1 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={item.packed}
                     onChange={() => togglePacked(trip.id, item.gearId)}
-                    className="w-4 h-4 rounded accent-accent cursor-pointer"
+                    className="w-4 h-4 rounded accent-accent cursor-pointer print:hidden"
                   />
-                  <span className={`text-sm flex-1 ${item.packed ? 'line-through text-slate-400' : ''}`}>
+                  <span className={`text-sm flex-1 ${item.packed ? 'line-through text-slate-400 print:no-underline print:text-inherit' : ''}`}>
                     {item.name}
+                    <span className="text-xs text-slate-400 ml-2">×{item.quantity} · {formatWeight(item.weight)}</span>
                   </span>
                 </label>
                 {item.assignee && assigneeFilter === '全部' && (
-                  <span className={`text-[10px] font-black tracking-wider uppercase px-2 py-0.5 rounded-full ${
-                    item.assignee === '我' ? 'bg-accent-light text-accent' :
-                    item.assignee === '公共' ? 'bg-amber-light text-amber' :
-                    'bg-blue-light text-blue'
-                  }`}>
-                    {item.assignee}
-                  </span>
+                  <AssigneeBadge assignee={item.assignee} />
                 )}
                 <button
-                  className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg hover:bg-red-light text-red cursor-pointer md:opacity-0 md:group-hover:opacity-100"
+                  className="print:hidden opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity p-1.5 rounded-lg hover:bg-red-light text-red cursor-pointer"
                   title="移除此装备"
                   onClick={() => removeGearFromTrip(trip.id, item.gearId)}
                 >
@@ -364,7 +386,6 @@ export default function TripDetail() {
         ))}
       </section>
 
-      {/* Journal */}
       <section className="mt-8">
         <h2 className="font-extrabold text-lg border-b-2 border-accent-light pb-2 mb-4">📝 游记</h2>
         {trip.journal && !editingJournal ? (
@@ -380,14 +401,14 @@ export default function TripDetail() {
               {trip.journal}
             </div>
             <button
-              className="mt-3 px-4 py-2 border border-slate-100 rounded-2xl text-sm font-medium hover:bg-slate-50 transition-all active:scale-95 cursor-pointer"
+              className="print:hidden mt-3 px-4 py-2 border border-slate-100 rounded-2xl text-sm font-medium hover:bg-slate-50 transition-all active:scale-95 cursor-pointer"
               onClick={() => { setJournalText(trip.journal ?? ''); setRating(trip.rating ?? 0); setEditingJournal(true); }}
             >
               编辑
             </button>
           </div>
         ) : editingJournal ? (
-          <div className="space-y-4">
+          <div className="space-y-4 print:hidden">
             <div>
               <label className="text-[10px] font-black tracking-wider uppercase text-slate-500 mb-1.5 block">评分</label>
               <div className="flex gap-2">
@@ -425,7 +446,7 @@ export default function TripDetail() {
             </div>
           </div>
         ) : (
-          <div>
+          <div className="print:hidden">
             <p className="text-sm text-slate-500 mb-3">还没有记录</p>
             <button
               className="px-5 py-2.5 bg-accent text-white rounded-2xl text-sm font-semibold hover:bg-emerald-700 transition-all active:scale-95 cursor-pointer"
@@ -437,10 +458,9 @@ export default function TripDetail() {
         )}
       </section>
 
-      {/* Add Gear Modal */}
       {showAddGear && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => setShowAddGear(false)}>
-          <div className="bg-surface rounded-3xl p-8 w-full max-w-lg shadow-xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-3 sm:p-4" onClick={() => setShowAddGear(false)}>
+          <div className="bg-surface rounded-3xl p-5 sm:p-8 w-full max-w-lg shadow-xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <h2 className="text-xl font-extrabold mb-6">添加装备</h2>
             {availableGear.length === 0 ? (
               <p className="text-sm text-slate-500">装备库没有可添加的装备了</p>
@@ -475,7 +495,7 @@ export default function TripDetail() {
                 </div>
                 <div className="space-y-2 max-h-60 overflow-y-auto">
                   {filteredAvailable.map(item => (
-                    <div key={item.id} className="flex items-center gap-2">
+                    <div key={item.id} className="flex flex-col sm:flex-row sm:items-center gap-2">
                       <button
                         className="flex-1 inline-flex items-center gap-2 px-4 py-3 rounded-2xl border border-slate-100 text-sm text-left transition-all hover:border-accent hover:bg-accent-light/30 active:scale-[0.98] cursor-pointer"
                         onClick={() => handleAddGear(item.id)}
@@ -487,12 +507,10 @@ export default function TripDetail() {
                       <select
                         className="px-3 py-2.5 rounded-xl border border-slate-100 text-xs cursor-pointer bg-surface"
                         value={assigneeFilter === '全部' ? '我' : assigneeFilter}
-                        onChange={e => handleAddGear(item.id, e.target.value)}
+                        onChange={e => handleAddGear(item.id, e.target.value as Assignee)}
                         onClick={e => e.stopPropagation()}
                       >
-                        <option value="我">我</option>
-                        <option value="公共">公共</option>
-                        <option value="队友">队友</option>
+                        {ASSIGNEES.map(a => <option key={a} value={a}>{a}</option>)}
                       </select>
                     </div>
                   ))}
@@ -514,6 +532,174 @@ export default function TripDetail() {
   );
 }
 
+function StatCard({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-2xl bg-surface border border-slate-100 px-4 py-3">
+      <div className="text-[10px] font-black tracking-wider uppercase text-slate-400 mb-1">{label}</div>
+      <div className="text-lg font-extrabold text-accent">{value}</div>
+    </div>
+  );
+}
+
+function WeightBreakdown({ title, entries }: { title: string; entries: Record<string, number> }) {
+  return (
+    <div className="rounded-2xl bg-surface border border-slate-100 p-4">
+      <div className="text-[10px] font-black tracking-wider uppercase text-slate-400 mb-2 flex items-center gap-1.5">
+        <Scale size={12} />
+        {title}
+      </div>
+      <div className="flex flex-wrap gap-2">
+        {Object.entries(entries).length > 0 ? Object.entries(entries).map(([label, weight]) => (
+          <span key={label} className="px-3 py-1 rounded-full bg-accent-light text-accent text-xs font-semibold">
+            {label} {formatWeight(weight)}
+          </span>
+        )) : (
+          <span className="text-xs text-slate-400">暂无重量数据</span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function AssigneeBadge({ assignee }: { assignee: Assignee }) {
+  return (
+    <span className={`text-[10px] font-black tracking-wider uppercase px-2 py-0.5 rounded-full ${
+      assignee === '我' ? 'bg-accent-light text-accent' :
+      assignee === '公共' ? 'bg-amber-light text-amber' :
+      'bg-blue-light text-blue'
+    }`}>
+      {assignee}
+    </span>
+  );
+}
+
+function gearWeight(gear: GearItem): number {
+  return (gear.weight ?? 0) * gear.quantity;
+}
+
+function summarizeGear(list: TripGear[], gearMap: Map<string, GearItem>) {
+  return list.reduce((acc, tg) => {
+    const gear = gearMap.get(tg.gearId);
+    if (!gear) return acc;
+    const weight = gearWeight(gear);
+    acc.count += 1;
+    acc.totalWeight += weight;
+    if (tg.packed) {
+      acc.packedCount += 1;
+      acc.packedWeight += weight;
+    }
+    return acc;
+  }, { count: 0, packedCount: 0, totalWeight: 0, packedWeight: 0 });
+}
+
+function summarizeByCategory(list: TripGear[], gearMap: Map<string, GearItem>): Record<string, number> {
+  const result: Record<string, number> = {};
+  for (const tg of list) {
+    const gear = gearMap.get(tg.gearId);
+    if (!gear) continue;
+    const label = gearCategoryLabel(gear.category);
+    result[label] = (result[label] ?? 0) + gearWeight(gear);
+  }
+  return removeZeroEntries(result);
+}
+
+function summarizeByAssignee(list: TripGear[], gearMap: Map<string, GearItem>): Record<string, number> {
+  const result: Record<string, number> = {};
+  for (const tg of list) {
+    const gear = gearMap.get(tg.gearId);
+    if (!gear) continue;
+    const label = tg.assignee ?? '我';
+    result[label] = (result[label] ?? 0) + gearWeight(gear);
+  }
+  return removeZeroEntries(result);
+}
+
+function removeZeroEntries(entries: Record<string, number>): Record<string, number> {
+  return Object.fromEntries(Object.entries(entries).filter(([, value]) => value > 0));
+}
+
+function formatWeight(grams: number): string {
+  if (grams <= 0) return '未录入';
+  if (grams >= 1000) return `${(grams / 1000).toFixed(1)}kg`;
+  return `${Math.round(grams)}g`;
+}
+
+function riskInfoEntries(trip: Trip): [string, string][] {
+  const info = trip.riskInfo;
+  if (!info) return [];
+  return [
+    ['天气', info.weather],
+    ['补给', info.supply],
+    ['交通', info.transport],
+    ['紧急联系人', info.emergency],
+    ['注意事项', info.notes],
+  ].filter((entry): entry is [string, string] => Boolean(entry[1]));
+}
+
+function buildSummaryText(trip: Trip, gearItems: GearItem[], sanitizedPlan: string, stats: ReturnType<typeof summarizeGear>): string {
+  const gearById = new Map(gearItems.map(g => [g.id, g]));
+  const lines: string[] = [];
+  lines.push(`🏔️ ${trip.title}`);
+  lines.push(`📍 ${trip.location}  |  📅 ${trip.startDate} ~ ${trip.endDate}`);
+  if (trip.route) lines.push(`🗺️ ${trip.route}`);
+  if (trip.distance || trip.elevation || trip.members.length) {
+    const parts: string[] = [];
+    if (trip.distance) parts.push(`📏 ${trip.distance}km`);
+    if (trip.elevation) parts.push(`🏔️ ${trip.elevation}m`);
+    if (trip.members.length) parts.push(`👥 ${trip.members.join(', ')}`);
+    lines.push(parts.join('  |  '));
+  }
+  lines.push(`🎒 装备重量 ${formatWeight(stats.totalWeight)}，已打包 ${formatWeight(stats.packedWeight)}`);
+  lines.push('');
+
+  const riskEntries = riskInfoEntries(trip);
+  if (riskEntries.length > 0) {
+    lines.push('━'.repeat(20));
+    lines.push('⚠️ 出发前风险信息');
+    lines.push('━'.repeat(20));
+    for (const [label, value] of riskEntries) lines.push(`${label}: ${value}`);
+    lines.push('');
+  }
+
+  if (sanitizedPlan) {
+    lines.push('━'.repeat(20));
+    lines.push('📋 行程计划');
+    lines.push('━'.repeat(20));
+    lines.push(stripHtml(sanitizedPlan).trim());
+    lines.push('');
+  }
+
+  if (trip.gearList.length > 0) {
+    lines.push('━'.repeat(20));
+    lines.push('🎒 打包清单');
+    lines.push('━'.repeat(20));
+    const catGroups: Record<string, string[]> = {};
+    for (const tg of trip.gearList) {
+      const g = gearById.get(tg.gearId);
+      if (!g) continue;
+      const cat = gearCategoryLabel(g.category);
+      if (!catGroups[cat]) catGroups[cat] = [];
+      const mark = tg.packed ? '✅' : '⬜';
+      const who = tg.assignee ? ` (${tg.assignee})` : '';
+      catGroups[cat].push(`  ${mark} ${g.name} ×${g.quantity} ${formatWeight(gearWeight(g))}${who}`);
+    }
+    for (const [cat, items] of Object.entries(catGroups)) {
+      lines.push(`\n${cat}`);
+      lines.push(...items);
+    }
+    lines.push('');
+  }
+
+  if (trip.journal) {
+    lines.push('━'.repeat(20));
+    lines.push('📝 游记');
+    lines.push('━'.repeat(20));
+    lines.push(trip.journal);
+  }
+
+  return lines.join('\n');
+}
+
 function stripHtml(html: string): string {
   return html
     .replace(/<style[^>]*>[\s\S]*?<\/style>/g, '')
@@ -526,6 +712,21 @@ function stripHtml(html: string): string {
     .replace(/\n{3,}/g, '\n\n')
     .replace(/[ \t]+/g, ' ')
     .trim();
+}
+
+function sanitizeHtml(html: string): string {
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  doc.querySelectorAll('script, iframe, object, embed, link, meta').forEach(node => node.remove());
+  doc.body.querySelectorAll('*').forEach(node => {
+    for (const attr of Array.from(node.attributes)) {
+      const name = attr.name.toLowerCase();
+      const value = attr.value.trim().toLowerCase();
+      if (name.startsWith('on') || ((name === 'href' || name === 'src') && value.startsWith('javascript:'))) {
+        node.removeAttribute(attr.name);
+      }
+    }
+  });
+  return doc.body.innerHTML;
 }
 
 function wrapPlanHtml(fragment: string): string {
