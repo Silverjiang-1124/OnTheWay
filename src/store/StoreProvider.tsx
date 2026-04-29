@@ -4,7 +4,7 @@ import { createSeedTrip, seedGear } from './seedData';
 import { StoreContext } from './storeContext';
 
 const STORAGE_KEY = 'ontheway_data';
-const CURRENT_VERSION = 5;
+const CURRENT_VERSION = 6;
 
 interface StoreData {
   version: number;
@@ -84,11 +84,24 @@ function loadData(): StoreData {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
-      const normalized = normalizeData(JSON.parse(raw));
-      if (normalized) {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(normalized));
-        return normalized;
+      const parsed = JSON.parse(raw);
+      let data = normalizeData(parsed);
+      if (!data) throw new Error('normalize failed');
+
+      // Migrate: populate missing weights from seed data by name match
+      if (!parsed.version || parsed.version < CURRENT_VERSION) {
+        const weightMap = new Map(seedGear.filter(g => g.weight).map(g => [g.name, g.weight]));
+        data = {
+          ...data,
+          gearItems: data.gearItems.map(g => ({
+            ...g,
+            weight: g.weight ?? weightMap.get(g.name) ?? undefined,
+          })),
+        };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
       }
+
+      return data;
     }
   } catch { /* ignore corrupted local data and reseed */ }
 
